@@ -2,9 +2,9 @@
 
 用 R 绘制论文研究区区位图的 Claude Code 技能。基于 ggplot2、sf、terra。
 
-![太原市区位图示例](example/taiyuan_locator_preview.png)
+![三级区位图示例](example/taiyuan_three_level_preview.png)
 
-上图由 `example/taiyuan_locator.R` 生成，190 × 99 mm。脚本出两版，成品 300 dpi，此处引用 150 dpi 版。左侧省级定位用 GEBCO 0.05° 底图并压低对比度，右侧主图用 ASTER GDEM 30 m，两级由虚线锥连接。高程分级由各自 DEM 的分位自动推出（主图 750/1000/1250/1500/1750 m，定位面板 250 至 1250 m）。
+中国 → 山西 → 太原三级，190 × 99 mm。国家面板把周边国家掩膜成中性灰蓝，中国境内才上分层设色，国界不靠粗线也读得出来；南海诸岛落在主框内，不另开角框。省级面板省界外罩白纱，山西是全饱和的那一块。主图用 ASTER GDEM 30 m，高程分级由 DEM 自身分位推出。两段虚线锥串起三级，端点全部解析求得。
 
 ## 功能
 
@@ -56,9 +56,20 @@ ggplot() +
 
 `load_dem()` 会打印栅格尺寸和缺值比例，缺值超过阈值即停止。窗口越出 DEM 瓦片覆盖时，图框边缘会出现无数据白缝，预览时常被比例尺盖住，所以做成断言。
 
-`example/taiyuan_locator.R` 是完整的两级面板例子，可以照着改。它需要三样本地数据：覆盖 N37–N38 / E111–E113 的 ASTER 压缩瓦片、含市县两级的行政区划 shp、以及 `ggmapcn::check_geodata()` 自动下载的 GEBCO。脚本开头三个路径改成你自己的即可。
-
 多面板拼版的顺序与单幅相反：先用 `pin_panel()` 把各面板尺寸定死，再用 `gridExtra::arrangeGrob()` 按毫米拼，最后由 `box_in()` 算出引线端点。`coord_sf()` 长宽比固定，先摆面板再塞地图会在槽内留信箱边，各面板图框因此不等宽。完整流程见 `SKILL.md`。
+
+## 示例
+
+`example/` 下两个脚本可以照着改，各出 300 dpi 成品与 150 dpi 预览两版。
+
+| 脚本 | 层级 | 演示重点 |
+|---|---|---|
+| `taiyuan_three_level.R` | 中国 → 山西 → 太原 | 掩膜、白纱、两段引线、国家窗口取边界线全域以省掉角框 |
+| `taiyuan_locator.R` | 山西 → 太原 | 定位面板整体去饱和的另一种处理 |
+
+![两级区位图示例](example/taiyuan_locator_preview.png)
+
+两者都需要三样本地数据：覆盖 N37–N38 / E111–E113 的 ASTER 压缩瓦片、含市县两级的行政区划 shp、以及 `ggmapcn::check_geodata()` 自动下载的 GEBCO。脚本开头的路径改成你自己的即可。压缩瓦片不必解包，`vsizip_tiles()` 会读归档拼出 GDAL 虚拟路径。
 
 ## 需要自己准备的数据
 
