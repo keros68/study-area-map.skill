@@ -366,6 +366,14 @@ assert_inside(c(0.598, 0.977), c(0.030, 0.148), what = "legend backing")
 
 Express furniture positions as fractions of the window, never as absolute coordinates. Fractions survive a change of window or panel size; absolute positions silently drift off the panel the next time the extent is edited.
 
+### Zoom out to make room
+
+An in-panel legend that lands on the study area is the normal outcome of fitting the window tightly to it: a tight window has no empty corner. Nudging the legend does not help, because every corner is occupied.
+
+Widen the window instead. The region is drawn at a smaller scale and the margin that frees is what the block sits on. `pad_until_clear()` searches for the smallest padding that clears a given block, padding proportionally so the aspect ratio — and the panel height derived from it — does not drift. The Taiyuan example settles at 19%.
+
+The alternative is to move the legend outside the panel. Both are legitimate; zooming out keeps the figure to one panel, an external legend keeps the region at full size.
+
 ### Corner budget
 
 An elongated study area leaves exactly two usable corners, on the long axis's off-diagonal. Inventory them before placing anything: north arrow, scale bar, elevation ramp, symbol legend, panel tag. Group the furniture — arrow plus elevation ramp in one box, symbol legend in the other — instead of scattering four small boxes into four corners.

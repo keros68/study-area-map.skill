@@ -346,6 +346,48 @@ assert_window <- function(p, win, tol = 1e-3) {
   invisible(TRUE)
 }
 
+# Pad a bbox by a fraction of its own span, which keeps the aspect ratio.
+pad_win <- function(bb, f) {
+  dx <- bb[["xmax"]] - bb[["xmin"]]; dy <- bb[["ymax"]] - bb[["ymin"]]
+  c(xmin = bb[["xmin"]] - f * dx, xmax = bb[["xmax"]] + f * dx,
+    ymin = bb[["ymin"]] - f * dy, ymax = bb[["ymax"]] + f * dy)
+}
+
+# Zoom out until an in-panel block stops covering the region.
+#
+# An in-panel legend that lands on the study area is the normal outcome of
+# fitting the window tightly to it: there is no empty corner to put anything in.
+# Widening the window is the cartographic fix — the region is drawn at a smaller
+# scale and the margin it frees is what the block sits on. The alternative is to
+# move the block outside the panel; both are legitimate, this one keeps the
+# figure to one panel.
+#
+# Padding is proportional to each span, so the aspect ratio does not drift and
+# the panel height derived from it stays put.
+#
+#   bb        bbox to pad, in the panel CRS
+#   obstacle  sf object that must stay clear of the block
+#   x, y      block extent as fractions of the window
+#   start     initial padding fraction
+#   step      increment per iteration
+#   max_f     give up past this, rather than zooming out without limit
+pad_until_clear <- function(bb, obstacle, x, y, start = 0.06, step = 0.01,
+                            max_f = 0.60, quiet = FALSE) {
+  f <- start
+  while (f <= max_f) {
+    w <- pad_win(bb, f)
+    if (inset_is_clear(w, x, y, obstacle)) {
+      if (!quiet) cat(sprintf("[window] padding %.0f%% clears the in-panel block
+",
+                              100 * f))
+      return(w)
+    }
+    f <- f + step
+  }
+  stop(sprintf("no padding up to %.0f%% clears the block; move it outside the panel",
+               100 * max_f))
+}
+
 # ---- corner inset ----
 # Physical aspect ratio of a fractional box inside a panel. The panel is in
 # projected units with equal x/y scaling, so the fraction ratio times the window

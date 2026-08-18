@@ -36,10 +36,13 @@ sx_shi <- st_transform(st_make_valid(sx_shi), CRS_M)
 ty     <- st_transform(st_make_valid(ty), CRS_M)
 ty_x   <- st_transform(st_make_valid(ty_x), CRS_M)
 
-# ---------------- 主图窗口：太原市外扩 6% ----------------
+# ---------------- 主图窗口 ----------------
+# 图例在图面右下，窗口贴着研究区取就没有空角可放。放大窗口直到图例区不压研究区，
+# 研究区因此画得小一些，让出的边缘正是图例落脚的地方。
+LEG_X <- c(0.596, 0.972); LEG_Y <- c(0.032, 0.170)
 b <- as.numeric(st_bbox(ty))
-px <- 0.06 * (b[3] - b[1]); py <- 0.06 * (b[4] - b[2])
-W_M <- c(xmin = b[1] - px, xmax = b[3] + px, ymin = b[2] - py, ymax = b[4] + py)
+W_M <- pad_until_clear(c(xmin = b[1], xmax = b[3], ymin = b[2], ymax = b[4]),
+                       ty, LEG_X, LEG_Y)
 
 # ---------------- 版面：先定槽位 ----------------
 FIG_W <- 190; PAD_L <- 2; GAP_H <- 7
