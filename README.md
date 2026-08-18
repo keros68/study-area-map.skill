@@ -17,6 +17,7 @@
 - `coord_sf` 设的窗口被后来的 `geom_sf` 顶掉，面板悄悄退回数据全域
 - DEM 未覆盖窗口，图框边缘会留无数据白缝
 - 图廓件压到图框，两条线在 8 pt 下并成一条粗断线
+- 角框压盖陆地，读者丢了一块地图且看不出丢了多少
 - 强调色与其他符号撞色，同一个红在印刷上分不出两种含义
 - 色带相邻两类距离过小，分级边界读不出来
 
@@ -78,7 +79,7 @@ ggplot() +
 
 | 脚本 | 层级 | 演示重点 |
 |---|---|---|
-| `taiyuan_three_level.R` | 中国 → 山西 → 太原 | 掩膜、白纱、两段引线；南海走主框或角框由脚本开头一个开关控制 |
+| `taiyuan_three_level.R` | 中国 → 山西 → 太原 | 掩膜、白纱、两段引线；南海走主框或角框由脚本开头一个开关控制，走角框时窗口自动东扩到角框落空 |
 | `taiyuan_locator.R` | 山西 → 太原 | 定位面板整体去饱和的另一种处理 |
 
 三级版，`SCS_INSET <- FALSE`，窗口取全部要素，南海落在国家主框内，三级引线齐全：
@@ -153,7 +154,7 @@ GEBCO 为 0.05°，约 5 km，用于国家级面板合适，用于省级面板�
 
 | 文件 | 内容 |
 |---|---|
-| `reference/relief_basemap.R` | `ensure_font()` `theme_map_pub()` `inscribed_window()` `bbox_union()` `vsizip_tiles()` `inset_aspect()` `corner_inset()` `credit_footer()` `assert_inside()` `assert_window()` `FRAME_PAD` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend()` `legend_backing()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` |
+| `reference/relief_basemap.R` | `ensure_font()` `theme_map_pub()` `inscribed_window()` `bbox_union()` `vsizip_tiles()` `inset_aspect()` `corner_inset()` `credit_footer()` `assert_inside()` `assert_window()` `inset_is_clear()` `assert_inset_clear()` `widen_for_inset()` `FRAME_PAD` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend()` `legend_backing()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` |
 | `reference/palettes.R` | `pal_hypso()` `elev_breaks()` `elev_labels()` `preview_hypso()` `check_ramp()` `simulate_cvd()` `to_gray()` `assert_accent_unique()` `PAL_SURROUND` `BRK_SURROUND` |
 
 两处做法与常见写法不同。

@@ -342,6 +342,47 @@ inset_aspect <- function(win, x, y) {
 #
 # Before using this, check the leader rule: a leader pair fans across the whole
 # side of the panel that faces the next panel, so an inset cannot share that side.
+# Does the corner box fall clear of the mapped region?
+#
+# A corner inset that covers land is a factual error, not a style choice: the
+# reader loses part of the map and cannot tell how much. The standard fix is to
+# widen the main window on that side until the corner is open sea, which is why
+# published national maps with a corner inset extend well past the coast.
+inset_is_clear <- function(win, x, y, obstacle) {
+  f <- frac_fun(win)
+  box <- sf::st_as_sfc(sf::st_bbox(
+    c(xmin = f$fx(x[1]), ymin = f$fy(y[1]), xmax = f$fx(x[2]), ymax = f$fy(y[2])),
+    crs = sf::st_crs(obstacle)))
+  !any(lengths(sf::st_intersects(obstacle, box)) > 0)
+}
+
+assert_inset_clear <- function(win, x, y, obstacle) {
+  if (!inset_is_clear(win, x, y, obstacle)) {
+    f <- frac_fun(win)
+    box <- sf::st_as_sfc(sf::st_bbox(
+      c(xmin = f$fx(x[1]), ymin = f$fy(y[1]), xmax = f$fx(x[2]), ymax = f$fy(y[2])),
+      crs = sf::st_crs(obstacle)))
+    a <- suppressWarnings(sf::st_area(sf::st_intersection(sf::st_union(obstacle), box)))
+    stop(sprintf(
+      "corner inset covers %.0f km2 of the mapped region (%.1f%% of the box). Widen the window on that side, or shrink the box.",
+      as.numeric(a) / 1e6, 100 * as.numeric(a) / as.numeric(sf::st_area(box))))
+  }
+  invisible(TRUE)
+}
+
+# Widen the window on one side until the corner box clears the region.
+# `side` is one of "xmax", "xmin", "ymax", "ymin".
+widen_for_inset <- function(win, x, y, obstacle, side = "xmax",
+                            step = 0.03, max_iter = 80) {
+  for (i in seq_len(max_iter)) {
+    if (inset_is_clear(win, x, y, obstacle)) return(win)
+    d <- if (substr(side, 1, 1) == "x") win[["xmax"]] - win[["xmin"]]
+         else win[["ymax"]] - win[["ymin"]]
+    win[[side]] <- win[[side]] + if (grepl("min$", side)) -step * d else step * d
+  }
+  stop("could not clear the inset box by widening; shrink or move the box instead")
+}
+
 corner_inset <- function(p, win, x = c(0.795, 0.988), y = c(0.015, 0.400)) {
   # Strip the inset's own margins, page background and legend before embedding.
   # annotation_custom draws the WHOLE grob, so a plot.margin and an opaque

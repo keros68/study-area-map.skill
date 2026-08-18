@@ -299,7 +299,23 @@ Draw the segments as one `grid::segmentsGrob()` in mm over the composed gtable (
 Three ways out:
 
 1. **Widen the main window so the inset is unnecessary.** Extend the window until every layer that must appear falls inside the main frame. This removes an element and the conflict at once, and is usually the best answer.
-2. **Keep the inset and drop the leader pair that would cross it.** A locator panel whose highlight is a filled accent-coloured patch already points at the next panel; the leaders are reinforcement, not the only cue. Use `corner_inset()`, and size the inset's window with `fit_aspect(bb, inset_aspect(win, x, y))` first — an inset whose window aspect does not match its box gets letterboxed by `coord_sf` and its edges stop aligning.
+2. **Keep the inset and drop the leader pair that would cross it.** First make the corner empty — see below. A locator panel whose highlight is a filled accent-coloured patch already points at the next panel; the leaders are reinforcement, not the only cue. Use `corner_inset()`, and size the inset's window with `fit_aspect(bb, inset_aspect(win, x, y))` first — an inset whose window aspect does not match its box gets letterboxed by `coord_sf` and its edges stop aligning.
+**A corner inset has to land on empty ground, and a window fitted to the land has no empty corner.** Fitting the window to the region puts coastline in every corner, so the box covers real map. Measured on a China panel fitted to the mainland, a box occupying the right 23% and bottom 43% of the panel covered 537,524 km² of the country — a quarter of the box — across eight province-level units. Nothing about the figure looks wrong; the reader simply loses that land and cannot tell how much.
+
+There is no box placement that fixes this, because the obstruction is the window, not the box. Widen the window on that side until the corner is open sea, which is why published national maps carrying a corner inset extend well past the coast. Widening changes the aspect, which changes the panel height, which moves the box, so iterate to a fixed point:
+
+```r
+for (i in 1:12) {
+  W <- widen_for_inset(W, IX, IY, region, side = "xmax")
+  h <- clamp(col_w / win_aspect(W))
+  W <- fit_aspect(W, col_w / h)
+  if (inset_is_clear(W, IX, IY, region)) break
+}
+assert_inset_clear(W, IX, IY, region)
+```
+
+The cost is real and worth stating: the same panel went from 38.1 mm tall to 32.9 mm, and the window now reaches 148°E, so the country is drawn smaller. That is the price of the inset, and it is why widening the window to include the far territory outright is usually the better of the two options.
+
 3. Drop the leader lines entirely. Legitimate — many journals' figures have none — but then the panels need some other cue tying them together (shared accent colour, matched frames).
 
 Also clear the target side: put the main panel's latitude labels on the **right** (`scale_y_continuous(position = "right")`) when leaders arrive from the left, or they cross the tick labels.
@@ -417,6 +433,7 @@ Two things still need explicit syncing because they are computed per figure:
 - Taking the window from one layer's bbox when several layers must fit — partial line layers cut whole regions off, and the result still looks like a map
 - Sizing an inset from a corner-bbox aspect ratio instead of the rendered panel ratio
 - A `geom_sf()` added after `coord_sf(xlim =, ylim =)` — the limits are silently discarded and the panel reverts to the data extent
+- A corner inset dropped into a window fitted to the land — it covers part of the map and nothing about the result looks wrong
 - Calling `ggplotGrob()` with no font-aware device open
 - A white casing under the accent-coloured boundary: at figure scale the casing blends into the line and it reads pink, not red, and no longer matches its own legend swatch
 - Two line styles on the map, one entry in the legend

@@ -19,6 +19,7 @@
 #   TRUE   主框只放陆域，南海走右下角框。角框与引线锥占同一块地方，因此这一版
 #          只保留山西到主图那一段引线，中国到山西改由红色块本身承担指示。
 SCS_INSET <- FALSE
+IX <- c(0.808, 0.985); IY <- c(0.020, 0.300)   # 角框在主框内的位置
 
 SKILL   <- "../reference"          # 从 example/ 目录运行本脚本
 DEM_DIR <- "F:/博士毕业论文/山西DEM"
@@ -87,6 +88,19 @@ bb <- c(xmin = bb0[["xmin"]] - 0.02 * dx, xmax = bb0[["xmax"]] + 0.02 * dx,
 h_cn <- min(max(col_w / win_aspect(bb), 0.34 * avail), 0.55 * avail)
 h_sx <- avail - h_cn
 W_CN <- fit_aspect(bb, col_w / h_cn)
+
+# 角框压不得陆地。窗口右下角此刻还在陆上，框放哪儿都会压，所以向东扩到太平洋，
+# 再按新长宽比重定框高。扩窗改长宽比、fit_aspect 又可能补高把框挪回陆上，故迭代。
+if (SCS_INSET) {
+  for (i in 1:12) {
+    W_CN <- widen_for_inset(W_CN, IX, IY, prov_c, side = "xmax")
+    h_cn <- min(max(col_w / win_aspect(W_CN), 0.34 * avail), 0.55 * avail)
+    W_CN <- fit_aspect(W_CN, col_w / h_cn)
+    if (inset_is_clear(W_CN, IX, IY, prov_c)) break
+  }
+  assert_inset_clear(W_CN, IX, IY, prov_c)
+  h_sx <- avail - h_cn
+}
 W_SX <- fit_aspect(st_bbox(st_transform(st_union(st_make_valid(sx_shi)), CRS_C)),
                    col_w / h_sx)
 cat(sprintf("[layout] col %.1f mm; main %.1f x %.1f mm; locators %.1f / %.1f mm\n",
@@ -158,7 +172,6 @@ p_cn <- ggplot() + cn_layers(rel_world, rel_cn) +
 
 if (SCS_INSET) {
   # 角框窗口先按角框的物理长宽比撑到位，否则 coord_sf 在框内留信箱边，右下两边对不齐
-  IX <- c(0.755, 0.988); IY <- c(0.018, 0.450)
   scs_lines <- bnd_c[in_scs, ]
   W_SCS <- fit_aspect(bbox_union(sansha, scs_lines), inset_aspect(W_CN, IX, IY))
   dem_scs <- load_dem(geb, crs = CRS_C, win = W_SCS, fact = 1, res = 4500)
