@@ -21,7 +21,7 @@ git clone https://github.com/keros68/study-area-map.skill.git \
 
 ## 用法
 
-先加载 [rfigure.skill](https://github.com/qwlei328-maker/rfigure.skill) 的字体与主题部分，得到 `LW`、`LW_DAT`、`TXT_GG`、`theme_qw_pub()`，再按下面的顺序调用。
+两个模块自带线宽、字号、字体注册与地图主题，加载后即可用。
 
 ```r
 SK <- "~/.claude/skills/study-area-map/reference/"
@@ -47,7 +47,7 @@ ggplot() +
   elev_legend(W, cols, elev_labels(brk)) +
   coord_sf(xlim = W[c("xmin", "xmax")], ylim = W[c("ymin", "ymax")],
            expand = FALSE, crs = CRS_M) +
-  theme_qw_pub()
+  theme_map_pub()
 ```
 
 `load_dem()` 会打印栅格尺寸和缺值比例，缺值超过阈值即停止。窗口越出 DEM 瓦片覆盖时，图框边缘会出现无数据白缝，预览时常被比例尺盖住，所以做成断言。
@@ -72,7 +72,7 @@ GEBCO 为 0.05°，约 5 km，用于国家级面板合适，用于省级面板�
 
 | 文件 | 内容 |
 |---|---|
-| `reference/relief_basemap.R` | `inscribed_window()` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend()` `legend_backing()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` |
+| `reference/relief_basemap.R` | `ensure_font()` `theme_map_pub()` `inscribed_window()` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend()` `legend_backing()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` |
 | `reference/palettes.R` | `pal_hypso()` `elev_breaks()` `elev_labels()` `assert_accent_unique()` `PAL_SURROUND` `BRK_SURROUND` |
 
 两处做法与常见写法不同。
@@ -89,7 +89,9 @@ R ≥ 4.3，ggplot2 ≥ 3.5，另需 sf、terra、tidyterra、ragg、systemfonts
 
 ## 致谢
 
-字号、线宽、配色纪律与导出规范沿用 [rfigure.skill](https://github.com/qwlei328-maker/rfigure.skill)。
+排版取值（8 pt 正文、1 pt 结构线、数据线加重、物理尺寸导出）沿用 [rfigure.skill](https://github.com/qwlei328-maker/rfigure.skill) 的约定。本技能自带这些常量，不需要另外安装。
+
+已有 rfigure.skill 的用户可以照旧用 `theme_qw_pub()`：本技能只在 `LW`、`TXT_GG` 等尚未定义时才赋值，不覆盖已有定义。
 
 ## 许可
 

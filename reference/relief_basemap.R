@@ -1,14 +1,60 @@
-# relief_basemap.R — reusable pieces for study-area location maps
+# relief_basemap.R -- reusable pieces for study-area location maps
 #
-# Source this after the rfigure.skill preamble, which must already have defined
-# LW, LW_DAT, TXT_PT, TXT_GG and registered Arial.
+# Self-contained: source this file and nothing else is required. The constants
+# below are set only if they do not already exist, so loading this alongside a
+# house-style preamble that defines LW / TXT_GG leaves those definitions alone.
 #
-# Nothing here is project-specific. Set the constants at the top of your figure
-# script, not in this file, so several figures in one paper can share it.
+# Nothing here is project-specific. Set the region constants at the top of your
+# figure script, not in this file, so several figures in one paper can share it.
 
-suppressPackageStartupMessages({library(sf); library(terra); library(tidyterra)})
+suppressPackageStartupMessages({
+  library(ggplot2); library(sf); library(terra); library(tidyterra)
+  library(systemfonts); library(ragg)
+})
 
-stopifnot(exists("LW"), exists("TXT_GG"))
+# 1 pt in mm, which is what ggplot2 linewidth takes. Structural lines (panel
+# border, ticks) sit at LW; data lines need to be clearly heavier or they are
+# indistinguishable from the frame at 60-100 mm panel widths.
+if (!exists("LW"))     LW     <- 25.4 / 72
+if (!exists("LW_DAT")) LW_DAT <- LW * 1.8
+if (!exists("TXT_PT")) TXT_PT <- 8
+# element_text(size =) is points; geom_text(size =) and annotate(size =) are
+# millimetres. In-panel text must use TXT_GG or it comes out about 2.8x too big.
+if (!exists("TXT_GG")) TXT_GG <- TXT_PT / ggplot2::.pt
+
+# Detect, register a fallback, then assert. Default R devices cannot find Arial
+# in the PostScript font database, so text measurement silently misbehaves
+# unless a font-aware device and a registered family are both in place.
+ensure_font <- function(family = "Arial") {
+  if (family %in% systemfonts::system_fonts()$family) return(invisible(family))
+  cand <- c(Sys.glob(file.path(Sys.getenv("WINDIR"), "Fonts", "arial.ttf")),
+            Sys.glob("/usr/share/fonts/**/LiberationSans-Regular.ttf"),
+            Sys.glob("/usr/share/fonts/**/DejaVuSans.ttf"),
+            Sys.glob("/System/Library/Fonts/Supplemental/Arial.ttf"))
+  if (length(cand)) systemfonts::register_font(family, plain = cand[[1]])
+  if (!family %in% systemfonts::system_fonts()$family)
+    stop(sprintf("font '%s' not available and no metric-compatible fallback found", family))
+  invisible(family)
+}
+ensure_font()
+
+# Minimal publication theme for map panels: one text size, a black frame, no
+# grid, white background. Frame weight is heavier than a statistical panel
+# because a map frame also has to hold against a full-bleed raster.
+theme_map_pub <- function(base_pt = TXT_PT, lw = LW * 1.7, family = "Arial") {
+  theme_classic(base_size = base_pt, base_family = family) +
+    theme(
+      text        = element_text(family = family, size = base_pt, colour = "black"),
+      axis.text   = element_text(family = family, size = base_pt, colour = "black"),
+      axis.title  = element_blank(),
+      axis.line   = element_blank(),
+      axis.ticks  = element_line(colour = "black", linewidth = LW),
+      panel.grid  = element_blank(),
+      panel.border     = element_rect(colour = "black", fill = NA, linewidth = lw),
+      panel.background = element_rect(fill = "white", colour = NA),
+      plot.background  = element_rect(fill = "white", colour = NA),
+      plot.margin      = margin(2, 2, 2, 2, "mm"))
+}
 
 # ---------------------------------------------------------------- windows ----
 

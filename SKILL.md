@@ -5,20 +5,21 @@ description: Use when building a study-area location or setting map for a paper 
 
 # study-area-map
 
-Typography, line weights, palettes, and export belong to **rfigure.skill** — load it too and do not restate its rules here. This skill covers only what is specific to maps: projection, window, relief, panel composition, and map furniture.
+This skill covers what is specific to maps: projection, window, relief, panel composition, and map furniture. `relief_basemap.R` is self-contained — it sets `LW`, `LW_DAT`, `TXT_PT`, `TXT_GG`, registers a font and supplies `theme_map_pub()`, but only where those names are not already defined, so a house-style preamble loaded alongside it still wins.
 
 The two overlap at rfigure.skill's *China Maps And Site Distributions* section. This skill goes further there, and corrects one measured error in it — see **Composition**.
 
 ## Reference implementation
 
-Three project-independent modules under `reference/`. Source them after the
-rfigure.skill preamble — `relief_basemap.R` asserts that `LW` and `TXT_GG`
-already exist.
+Two project-independent modules under `reference/`. Source `relief_basemap.R`
+first; it carries the typographic constants, font registration and map theme
+that `palettes.R` and the figure script rely on.
 
-- **`relief_basemap.R`** — `inscribed_window()`, `fit_aspect()`, `win_aspect()`,
-  `load_dem()` with its no-data assertion, `locate_na()`, `relief_rgb()`,
-  `north_needle()`, `elev_legend()`, `legend_backing()`, `pin_panel()`,
-  `panel_margins()`, `with_font_device()`, `box_in()`, `add_leaders()`
+- **`relief_basemap.R`** — `ensure_font()`, `theme_map_pub()`,
+  `inscribed_window()`, `fit_aspect()`, `win_aspect()`, `load_dem()` with its
+  no-data assertion, `locate_na()`, `relief_rgb()`, `north_needle()`,
+  `elev_legend()`, `legend_backing()`, `pin_panel()`, `panel_margins()`,
+  `with_font_device()`, `box_in()`, `add_leaders()`
 - **`palettes.R`** — `pal_hypso()`, `elev_breaks()`, `elev_labels()`,
   `assert_accent_unique()`, `PAL_SURROUND`/`BRK_SURROUND`
 
