@@ -2,9 +2,9 @@
 
 用 R 绘制论文研究区区位图的 Claude Code 技能。基于 ggplot2、sf、terra。
 
-![太原市区位图示例](example/taiyuan_locator.png)
+![太原市区位图示例](example/taiyuan_locator_preview.png)
 
-上图由 `example/taiyuan_locator.R` 生成，190 × 99 mm，300 dpi。左侧省级定位用 GEBCO 0.05° 底图并压低对比度，右侧主图用 ASTER GDEM 30 m，两级由虚线锥连接。高程分级由各自 DEM 的分位自动推出（主图 750/1000/1250/1500/1750 m，定位面板 250 至 1250 m）。
+上图由 `example/taiyuan_locator.R` 生成，190 × 99 mm。脚本出两版，成品 300 dpi，此处引用 150 dpi 版。左侧省级定位用 GEBCO 0.05° 底图并压低对比度，右侧主图用 ASTER GDEM 30 m，两级由虚线锥连接。高程分级由各自 DEM 的分位自动推出（主图 750/1000/1250/1500/1750 m，定位面板 250 至 1250 m）。
 
 ## 功能
 

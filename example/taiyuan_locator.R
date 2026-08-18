@@ -8,7 +8,8 @@
 #   ADM_DIR   含「中国_市.shp」「中国_县.shp」的行政区划目录
 #   GEBCO     省级面板用的粗 DEM，由 ggmapcn::check_geodata() 自动下载
 #
-# 输出 taiyuan_locator.png，190 x 图高 mm，300 dpi。
+# 出两版：taiyuan_locator.png 300 dpi 为成品，taiyuan_locator_preview.png
+# 150 dpi 供 README 引用。两版尺寸一致，只差分辨率。
 
 SKILL   <- "../reference"          # 从 example/ 目录运行本脚本
 DEM_DIR <- "F:/博士毕业论文/山西DEM"
@@ -135,7 +136,10 @@ segs <- rbind(
   data.frame(x1 = bx[["x1"]], y1 = bx[["yb"]], x2 = main_rect[["x0"]], y2 = main_rect[["yb"]]))
 fig <- add_leaders(base, segs, FIG_H)
 
-out <- "taiyuan_locator.png"
-ggsave(out, fig, width = FIG_W, height = FIG_H, units = "mm", dpi = 300,
-       bg = "white", device = ragg::agg_png)
-cat(sprintf("WROTE %s  %g x %.1f mm\n", basename(out), FIG_W, FIG_H))
+for (v in list(list("taiyuan_locator.png", 300),
+               list("taiyuan_locator_preview.png", 150))) {
+  ggsave(v[[1]], fig, width = FIG_W, height = FIG_H, units = "mm",
+         dpi = v[[2]], bg = "white", device = ragg::agg_png)
+  cat(sprintf("WROTE %-30s %g x %.1f mm @ %d dpi  %.2f MB\n",
+              v[[1]], FIG_W, FIG_H, v[[2]], file.info(v[[1]])$size / 1e6))
+}
