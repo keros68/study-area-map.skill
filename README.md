@@ -45,12 +45,13 @@ ggplot() +
   tidyterra::geom_spatraster_rgb(data = rel) +
   geom_sf(data = aoi, fill = NA, colour = "#C62828", linewidth = LW_DAT * 1.3) +
   north_needle(W) +
-  legend_backing(W) +
-  elev_legend(W, cols, elev_labels(brk)) +
+  elev_legend_block(W, cols, elev_labels(brk), panel_h_mm = 90) +
   coord_sf(xlim = W[c("xmin", "xmax")], ylim = W[c("ymin", "ymax")],
            expand = FALSE) +
   theme_map_pub()
 ```
+
+图例内部的行距按毫米排，所以要传面板高度。行距若按比例给，文字高度是固定的毫米数，面板一小文字占比就变大，刻度数字会压到图例自己的边框上。
 
 `coord_sf()` 必须排在所有 `geom_sf()` 之后。`geom_sf()` 自带一个默认 `coord_sf()`，排在其后会替换掉已设的窗口，面板退回数据全域。`assert_window(p, W)` 用于核验。
 
@@ -129,7 +130,7 @@ GEBCO 为 0.05°，约 5 km，用于国家级面板合适，用于省级面板�
 
 | 文件 | 内容 |
 |---|---|
-| `reference/relief_basemap.R` | `ensure_font()` `theme_map_pub()` `inscribed_window()` `bbox_union()` `vsizip_tiles()` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend()` `legend_backing()` `assert_inside()` `assert_window()` `inset_is_clear()` `assert_inset_clear()` `widen_for_inset()` `inset_aspect()` `corner_inset()` `credit_footer()` `check_cn_content()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` `FRAME_PAD` `CN_REQUIRED_POINTS` |
+| `reference/relief_basemap.R` | `ensure_font()` `theme_map_pub()` `inscribed_window()` `bbox_union()` `vsizip_tiles()` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend_block()` `legend_backing()` `assert_inside()` `assert_window()` `inset_is_clear()` `assert_inset_clear()` `widen_for_inset()` `inset_aspect()` `corner_inset()` `credit_footer()` `check_cn_content()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` `FRAME_PAD` `CN_REQUIRED_POINTS` |
 | `reference/palettes.R` | `pal_hypso()` `elev_breaks()` `elev_labels()` `preview_hypso()` `check_ramp()` `simulate_cvd()` `to_gray()` `assert_accent_unique()` `PAL_SURROUND` `BRK_SURROUND` |
 
 两处做法与常见写法不同。

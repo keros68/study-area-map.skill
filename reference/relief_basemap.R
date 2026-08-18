@@ -266,19 +266,43 @@ north_needle <- function(win, ax = 0.055, ay = 0.928, h = 0.060, slim = 0.22,
                 size = TXT_GG, family = "Arial", colour = col))
 }
 
-# Hand-drawn elevation ramp. geom_spatraster_rgb() produces no guide, so the
-# legend has to be drawn; doing it by hand also makes the position exact.
-# `labs` must have length(cols) - 1 entries — one per interior boundary. Leave
-# alternate entries "" or the labels run together at 8 pt.
-elev_legend <- function(win, cols, labs, title = "Elevation (m)",
-                        x = c(0.630, 0.945), y_bar = c(0.064, 0.090),
-                        y_title = 0.112, y_tick = 0.048) {
+# Elevation legend as one block: backing, ramp, title, tick labels.
+#
+# The internal spacing is computed in millimetres, not in fractions of the
+# panel. Text height is fixed in points, so fraction-based spacing that looks
+# right on a 90 mm panel collides on a 40 mm one: the tick labels grow into the
+# backing's own border. Pass the panel height and the block lays itself out.
+#
+#   win         window in data coordinates
+#   panel_h_mm  panel height in mm; the sizes below are derived from it
+#   x           left and right edge of the ramp, as fractions of panel width
+#   anchor      c(x_right, y_bottom) of the backing, as fractions
+#
+# `labs` must have length(cols) - 1 entries, one per interior class boundary.
+# Blank alternate entries or they run together at 8 pt.
+elev_legend_block <- function(win, cols, labs, panel_h_mm,
+                              title = "Elevation (m)",
+                              x = c(0.630, 0.945), anchor = c(0.972, 0.032),
+                              pad_mm = 1.0, bar_mm = 2.6) {
   stopifnot(length(labs) == length(cols) - 1)
-  assert_inside(x, c(y_tick - 0.015, y_title + 0.015), what = "elevation legend")
-  f  <- frac_fun(win)
+  f   <- frac_fun(win)
+  mm  <- function(v) v / panel_h_mm                 # mm -> fraction of height
+  th  <- mm(TXT_PT * 25.4 / 72)                     # cap-to-descender allowance
+  pad <- mm(pad_mm)
+  y0  <- anchor[2]
+  y_tick  <- y0 + pad + th / 2
+  y_bar   <- c(y_tick + th / 2 + pad, y_tick + th / 2 + pad + mm(bar_mm))
+  y_title <- y_bar[2] + pad + th / 2
+  y1      <- y_title + th / 2 + pad
+  bx <- c(x[1] - 0.034, anchor[1])
+  assert_inside(bx, c(y0, y1), what = "elevation legend block")
+
   nb <- length(cols)
   sw <- seq(x[1], x[2], length.out = nb + 1)
   list(
+    annotate("rect", xmin = f$fx(bx[1]), xmax = f$fx(bx[2]),
+             ymin = f$fy(y0), ymax = f$fy(y1),
+             fill = "white", alpha = 0.88, colour = "grey35", linewidth = LW * 0.6),
     annotate("rect", xmin = f$fx(sw[-(nb + 1)]), xmax = f$fx(sw[-1]),
              ymin = f$fy(y_bar[1]), ymax = f$fy(y_bar[2]), fill = cols, colour = NA),
     annotate("rect", xmin = f$fx(sw[1]), xmax = f$fx(sw[nb + 1]),
@@ -290,7 +314,7 @@ elev_legend <- function(win, cols, labs, title = "Elevation (m)",
              size = TXT_GG * 0.92, family = "Arial", colour = "black"))
 }
 
-# Translucent white backing for any in-panel block.
+# Translucent white backing for a hand-placed in-panel block.
 legend_backing <- function(win, x = c(0.596, 0.972), y = c(0.032, 0.148),
                            alpha = 0.88) {
   assert_inside(x, y, what = "legend backing")
@@ -318,12 +342,7 @@ assert_window <- function(p, win, tol = 1e-3) {
   d <- max(abs(got[c("xmin", "xmax", "ymin", "ymax")] -
                win[c("xmin", "xmax", "ymin", "ymax")])) / span
   if (d > tol) stop(sprintf(
-    "panel range is not the requested window (relative error %.3f).
-  asked  x %.0f..%.0f  y %.0f..%.0f
-  drawn  x %.0f..%.0f  y %.0f..%.0f
-  A geom_sf() after coord_sf() replaces the coord and drops the limits; move coord_sf() last.",
-    d, win[["xmin"]], win[["xmax"]], win[["ymin"]], win[["ymax"]],
-    got[["xmin"]], got[["xmax"]], got[["ymin"]], got[["ymax"]]))
+    "panel range is not the requested window (relative error %.3f). A geom_sf() after coord_sf() replaces the coord and drops the limits; move coord_sf() last.", d))
   invisible(TRUE)
 }
 

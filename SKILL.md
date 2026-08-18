@@ -333,6 +333,8 @@ fy <- function(t) W[["ymin"]] + t * (W[["ymax"]] - W[["ymin"]])
 
 Order the block: symbol rows on top, a thin separator, then the elevation ramp with its title above and tick labels below. Back it with a `fill = "white", alpha = 0.88` rect and a grey hairline border.
 
+**Lay the block's internals out in millimetres, not in fractions of the panel.** Text height is fixed in points, so fractional spacing tuned on a 90 mm panel collides on a 40 mm one and the tick labels grow into the block's own border. `elev_legend_block()` takes `panel_h_mm` and derives its spacing from it. The rule generalises: fractions are right for *placing* a block, millimetres are right for spacing *inside* it.
+
 Label ticks at **alternate** class boundaries. Six classes with five labelled boundaries at 8 pt run together into `10001250150017502000`.
 
 Say `Elevation (m)`. `m a.s.l.` spends four characters restating what "elevation" already means.
