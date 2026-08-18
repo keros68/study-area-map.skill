@@ -64,7 +64,16 @@ W <- c(xmin = max(sL[, 1]), xmax = min(sR[, 1]),
        ymin = max(sB[, 2]), ymax = min(sT[, 2]))
 ```
 
-The mirror-image failure is worse and quieter: for a **country panel**, taking the bbox of a transformed lon/lat rectangle *clips real land*. In a Lambert projection of China, a 73–136°E × 17.5–54.5°N rectangle loses roughly 600 km off the south — Yunnan, Guangxi, Guangdong, Hainan, Taiwan, Hong Kong and Macau all vanish, and the map still looks plausible. For country panels take `st_bbox()` of the **data** (the province polygons, or the national boundary layer when the map must show maritime claims), never of a coordinate rectangle.
+The mirror-image failure is worse and quieter: for a **country panel**, taking the bbox of a transformed lon/lat rectangle *clips real land*. In a Lambert projection of China, a 73–136°E × 17.5–54.5°N rectangle loses roughly 600 km off the south — Yunnan, Guangxi, Guangdong, Hainan, Taiwan, Hong Kong and Macau all vanish, and the map still looks plausible. For country panels take `st_bbox()` of the **data**, never of a coordinate rectangle.
+
+Take it from *every* layer that has to fit, via `bbox_union()`. One layer's bbox is not a proxy for the others, and boundary-line layers are the usual trap: they frequently hold only selected segments — disputed sections, maritime lines — so their extent can stop far short of the polygons. A real case: a national line layer whose northernmost feature sat at 38.68°N, used alone as the window, cut 14.9° of latitude and 12.3° of longitude off a country map and dropped 99 prefecture units. The frame still looked like a plausible map.
+
+Then verify rather than eyeball it — at locator-panel size a missing province is invisible:
+
+```r
+clip <- sf::st_as_sfc(sf::st_bbox(W, crs = sf::st_crs(prov)))
+stopifnot(all(lengths(sf::st_within(sf::st_geometry(prov), clip)) > 0))
+```
 
 ### Fix the slot first, then expand the window
 
@@ -367,6 +376,7 @@ Two things still need explicit syncing because they are computed per figure:
 
 - Alpha-blending the hillshade, then compensating with a more saturated palette
 - `st_bbox()` of a transformed lon/lat rectangle for a country panel — silently amputates the south
+- Taking the window from one layer's bbox when several layers must fit — partial line layers cut whole regions off, and the result still looks like a map
 - Sizing an inset from a corner-bbox aspect ratio instead of the rendered panel ratio
 - Calling `ggplotGrob()` with no font-aware device open
 - A white casing under the accent-coloured boundary: at figure scale the casing blends into the line and it reads pink, not red, and no longer matches its own legend swatch

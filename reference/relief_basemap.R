@@ -73,6 +73,20 @@ inscribed_window <- function(lon, lat, crs, n = 400) {
     ymin = max(sB[, 2]), ymax = min(sT[, 2]))
 }
 
+# Combined bbox of several layers, in one CRS.
+#
+# A country panel window must come from every layer that has to fit inside it,
+# not from whichever one is handy. Boundary-line layers in particular are often
+# partial -- disputed segments, maritime lines -- so their bbox can fall far
+# short of the polygon layer and silently amputate the map.
+bbox_union <- function(...) {
+  bs <- lapply(list(...), sf::st_bbox)
+  c(xmin = min(vapply(bs, function(b) b[["xmin"]], numeric(1))),
+    xmax = max(vapply(bs, function(b) b[["xmax"]], numeric(1))),
+    ymin = min(vapply(bs, function(b) b[["ymin"]], numeric(1))),
+    ymax = max(vapply(bs, function(b) b[["ymax"]], numeric(1))))
+}
+
 # Expand a window outward until it matches a slot's aspect ratio. Outward only,
 # so nothing is cropped. Call this AFTER the slot size in mm is decided —
 # coord_sf has a fixed aspect and will letterbox inside a mismatched slot,

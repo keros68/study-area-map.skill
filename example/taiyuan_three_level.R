@@ -68,8 +68,11 @@ h_sx <- panel_h - GAP_V - h_cn
 cat(sprintf("[版面] 左列 %.1f mm；主图 panel %.1f x %.1f mm；定位框 %.1f / %.1f mm\n",
             col_w, panel_w, panel_h, h_cn, h_sx))
 
-# 国家窗口取边界线图层的完整范围，南海断续线因此落在主框内，不必另开角框
-bb <- st_bbox(bnd_c); dx <- bb[["xmax"]] - bb[["xmin"]]; dy <- bb[["ymax"]] - bb[["ymin"]]
+# 国家窗口必须取「所有要进框的图层」的合并范围。中国_省line.shp 只有 8 条境界线段
+# （含南海断续线），最北仅到 38.68 度，单取它的 bbox 会把东北、内蒙、新疆、台湾整片
+# 裁掉，而且图面看不出异常。合并后南海断续线也在框内，不必另开角框。
+bb <- bbox_union(prov_c, bnd_c)
+dx <- bb[["xmax"]] - bb[["xmin"]]; dy <- bb[["ymax"]] - bb[["ymin"]]
 W_CN <- fit_aspect(c(xmin = bb[["xmin"]] - 0.02 * dx, xmax = bb[["xmax"]] + 0.02 * dx,
                      ymin = bb[["ymin"]] - 0.02 * dy, ymax = bb[["ymax"]] + 0.02 * dy),
                    col_w / h_cn)
