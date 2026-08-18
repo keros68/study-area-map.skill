@@ -19,7 +19,11 @@
 #   TRUE   主框只放陆域，南海走右下角框。角框与引线锥占同一块地方，因此这一版
 #          只保留山西到主图那一段引线，中国到山西改由红色块本身承担指示。
 SCS_INSET <- FALSE
-IX <- c(0.808, 0.985); IY <- c(0.020, 0.300)   # 角框在主框内的位置
+IX <- c(0.760, 0.985); IY <- c(0.020, 0.300)   # 角框在主框内的位置
+# 南海诸岛作中国地图附图时须命名（《公开地图内容表示规范》第六条第三款）。
+# 名称要放得下，角框就不能太小，这是角框方案的硬约束。
+INSET_LABEL <- "South China Sea
+Islands"
 
 SKILL   <- "../reference"          # 从 example/ 目录运行本脚本
 DEM_DIR <- "F:/博士毕业论文/山西DEM"
@@ -100,6 +104,7 @@ if (SCS_INSET) {
   }
   assert_inset_clear(W_CN, IX, IY, prov_c)
   h_sx <- avail - h_cn
+  fr_cn <- frac_fun(W_CN)
 }
 W_SX <- fit_aspect(st_bbox(st_transform(st_union(st_make_valid(sx_shi)), CRS_C)),
                    col_w / h_sx)
@@ -182,7 +187,10 @@ if (SCS_INSET) {
     win_coord(W_SCS) + theme_loc() +
     theme(panel.border = element_rect(colour = "grey30", fill = NA, linewidth = LW * 0.8))
   assert_window(p_scs, W_SCS)
-  p_cn <- p_cn + corner_inset(p_scs, W_CN, IX, IY)
+  p_cn <- p_cn + corner_inset(p_scs, W_CN, IX, IY) +
+    annotate("text", x = fr_cn$fx(IX[2]), y = fr_cn$fy(IY[2] + 0.075), hjust = 1,
+             label = INSET_LABEL, size = TXT_GG * 0.86, family = "Arial",
+             colour = "black", lineheight = 0.95)
 }
 assert_window(p_cn, W_CN)
 
@@ -215,6 +223,10 @@ p_main <- ggplot() +
                    line_width = LW / 0.353, pad_x = unit(2.5, "mm"),
                    pad_y = unit(2.5, "mm")) +
   theme_map_pub()
+
+cat("[content] 中国全图必备内容覆盖核查
+")
+if (SCS_INSET) check_cn_content(W_CN, W_SCS, crs = CRS_C) else check_cn_content(W_CN, crs = CRS_C)
 
 assert_window(p_sx, W_SX)
 assert_window(p_main, W_M)

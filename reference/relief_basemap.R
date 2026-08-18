@@ -474,3 +474,42 @@ add_leaders <- function(base_grob, segs, fig_h_mm, col = "grey35") {
     gp = grid::gpar(col = col, lty = "22", lwd = LW / 0.353 * 0.7))
   grid::grobTree(base_grob, leaders)
 }
+
+# ---- national-map content coverage ----
+
+# Reference points that a map of China is required to show. Coordinates are
+# approximate and serve only to test whether a frame covers the feature.
+#
+# Source: 公开地图内容表示规范 (自然资规〔2023〕2 号), 第五条第二款 and 第六条第五款:
+# a map of China must show, besides the mainland, Hainan Island and Taiwan
+# Island, the South China Sea Islands and the Diaoyu Dao islands; the South
+# China Sea Islands must include the Dongsha, Xisha, Zhongsha and Nansha
+# groups together with Zengmu Ansha and Huangyan Dao.
+CN_REQUIRED_POINTS <- data.frame(
+  name = c("Zengmu Ansha", "Huangyan Dao", "Xisha (Yongxing Dao)",
+           "Diaoyu Dao", "Chiwei Yu"),
+  lon  = c(112.28, 117.75, 112.34, 123.47, 124.57),
+  lat  = c(3.93, 15.15, 16.83, 25.75, 25.92))
+
+# Does the figure cover the required features, counting the main frame and any
+# inset together? Pass every window the figure draws.
+#
+# This tests COVERAGE ONLY. It is not a compliance check and cannot be one:
+# whether a published map satisfies 地图管理条例 depends on the boundary data
+# used, on naming, and on review, none of which this function can judge. Use an
+# approved standard map as the source and have the figure reviewed.
+check_cn_content <- function(..., crs, quiet = FALSE) {
+  wins <- list(...)
+  pts <- sf::st_transform(sf::st_as_sf(CN_REQUIRED_POINTS,
+                                       coords = c("lon", "lat"), crs = 4326), crs)
+  ok <- rep(FALSE, nrow(pts))
+  for (w in wins) {
+    box <- sf::st_as_sfc(sf::st_bbox(w, crs = sf::st_crs(crs)))
+    ok <- ok | lengths(sf::st_within(sf::st_geometry(pts), box)) > 0
+  }
+  if (!quiet) for (i in seq_len(nrow(pts)))
+    cat(sprintf("  [%s] %s\n", if (ok[i]) "ok  " else "MISS", CN_REQUIRED_POINTS$name[i]))
+  if (!all(ok)) stop(sprintf("frame does not cover: %s",
+                             paste(CN_REQUIRED_POINTS$name[!ok], collapse = ", ")))
+  invisible(TRUE)
+}

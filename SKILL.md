@@ -370,6 +370,12 @@ An elongated study area leaves exactly two usable corners, on the long axis's of
 
 ## Source data
 
+**A map of China has mandatory content, set by regulation.** 公开地图内容表示规范 (自然资规〔2023〕2 号) requires that a map of China show, besides the mainland, Hainan Island and Taiwan Island, the South China Sea Islands and the Diaoyu Dao islands (第五条第二款); that the South China Sea Islands include the Dongsha, Xisha, Zhongsha and Nansha groups with Zengmu Ansha and Huangyan Dao (第六条第五款); that they may sit either in the main frame or in an inset (第六条第二款); and that an inset carrying them be named 南海诸岛 (第六条第三款). National boundaries follow the standard sample approved by the State Council (第三条).
+
+`check_cn_content()` tests whether the frames a figure draws — main plus inset — cover those features. It is a coverage test only. Whether a published map complies depends on the boundary data, the naming and the review process, none of which code can judge; use a downloaded approved standard map and have the figure reviewed before publication.
+
+The naming requirement has a practical consequence. An inset must be large enough to carry its name, and a larger inset forces the window further out to keep the corner clear, so the country is drawn smaller. Measured on a 45.6 mm locator panel, moving the South China Sea into an inset took the China panel from 46.7 mm to 31.0 mm and pushed the window east to about 150°E. At locator size, put them in the main frame.
+
 **Boundary vectors decide credibility; get them from the authoritative publisher for your region**, not from whatever a plotting package happens to bundle. Record the dataset name, version and download date, and put them in the figure caption. Package-bundled geometry usually documents neither, which is enough reason to prefer a named source.
 
 **Elevation is not a boundary.** GEBCO, ASTER GDEM, SRTM and similar rasters are independent of any administrative dataset, so pairing an open DEM with a named boundary source is normal practice. Cite the DEM separately.

@@ -136,6 +136,28 @@ ggplot() +
 
 阈值 10 是经验值不是标准：低于它，两档的边界在 8 pt 图例上就看不出来了。判定默认只算正常视觉与两种色盲；要黑白印刷时把 `"gray"` 加进 `require`。
 
+## 中国地图的底图
+
+**边界数据由使用者自备，用自然资源部标准地图服务（bzdt.ch.mnr.gov.cn）下载的标准地图，本仓库不分发。** 不分发不是为了省事：标准地图的效力属于下载者本人那一份，仓库里的副本不带这层效力，也无法替使用者承担责任。
+
+本仓库示例以「中国省市县标准行政区划数据 审图号GS（2024）0650号」作示范，**最终以使用者自备的版本为准**。
+
+按《公开地图内容表示规范》（自然资规〔2023〕2 号）：
+
+| 条款 | 要求 |
+|---|---|
+| 第三条 | 国界按国务院批准公布的中国国界线画法标准样图绘制 |
+| 第五条第二款 | 中国全图除大陆、海南岛、台湾岛外，还应表示南海诸岛、钓鱼岛及其附属岛屿等重要岛屿 |
+| 第六条第二款 | 南海诸岛既可包括在正图内，也可作附图 |
+| 第六条第三款 | 作为中国地图附图时，一律称「南海诸岛」 |
+| 第六条第五款 | 南海诸岛应表示东沙、西沙、中沙、南沙群岛以及曾母暗沙、黄岩岛等岛屿岛礁 |
+
+`check_cn_content()` 核查曾母暗沙、黄岩岛、西沙、钓鱼岛、赤尾屿是否落在图框（含角框）内，两个三级示例均通过。
+
+**这只是覆盖性核查，不是合规判定。** 是否合规取决于所用边界数据、注记与送审，本技能无法代为判断，也不作任何担保。图件公开发表前请按《地图管理条例》（国务院令第664号）送审。
+
+南海放正图还是作附图，规范两者都允许。**定位面板尺寸小时建议放正图。** 附图要放得下「南海诸岛」这个名称就不能太小，框一大又要把窗口继续东扩才不压陆地，国土因此越画越小。实测在 45.6 mm 宽的定位框里，角框版把中国框由 46.7 mm 压到 31.0 mm、窗口东扩到约 150°E。示例默认 `SCS_INSET <- FALSE`。
+
 ## 需要自己准备的数据
 
 仓库不含 shapefile 和栅格。边界数据各地区来源不同，图注需写明出处与版本，随技能分发会丢掉这层信息；DEM 体积大，且已有公开服务。
@@ -154,7 +176,7 @@ GEBCO 为 0.05°，约 5 km，用于国家级面板合适，用于省级面板�
 
 | 文件 | 内容 |
 |---|---|
-| `reference/relief_basemap.R` | `ensure_font()` `theme_map_pub()` `inscribed_window()` `bbox_union()` `vsizip_tiles()` `inset_aspect()` `corner_inset()` `credit_footer()` `assert_inside()` `assert_window()` `inset_is_clear()` `assert_inset_clear()` `widen_for_inset()` `FRAME_PAD` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend()` `legend_backing()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` |
+| `reference/relief_basemap.R` | `ensure_font()` `theme_map_pub()` `inscribed_window()` `bbox_union()` `vsizip_tiles()` `inset_aspect()` `corner_inset()` `credit_footer()` `assert_inside()` `assert_window()` `inset_is_clear()` `assert_inset_clear()` `widen_for_inset()` `check_cn_content()` `CN_REQUIRED_POINTS` `FRAME_PAD` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend()` `legend_backing()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` |
 | `reference/palettes.R` | `pal_hypso()` `elev_breaks()` `elev_labels()` `preview_hypso()` `check_ramp()` `simulate_cvd()` `to_gray()` `assert_accent_unique()` `PAL_SURROUND` `BRK_SURROUND` |
 
 两处做法与常见写法不同。
