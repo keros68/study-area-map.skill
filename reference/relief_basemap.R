@@ -94,29 +94,71 @@ win_aspect <- function(w) as.numeric((w[["xmax"]] - w[["xmin"]]) /
 
 # ------------------------------------------------------------------- DEM -----
 
-# Merge DEM tiles, reproject, crop to the window, and assert the no-data
-# fraction. The assertion is the point: a window that overruns tile coverage
-# leaves a blank sliver on one frame edge that hides under a scale bar in
-# preview and survives to the journal.
+# Mosaic DEM tiles onto the target grid and assert the no-data fraction.
 #
-#   dir      directory of tiles
-#   pattern  regex matching the tiles to use
+# Tiles are projected one by one onto a single template covering the window,
+# then merged. Merging first fails outright when tiles sit in different UTM
+# zones, and projecting each tile independently leaves seams where the output
+# grids do not align.
+#
+# The assertion is the point: a window that overruns tile coverage leaves a
+# blank sliver on one frame edge that hides under a scale bar in preview and
+# survives to the journal.
+#
+#   src      directory of tiles, or a character vector of file paths.
+#            GDAL virtual paths work, so zipped tiles need no unpacking:
+#            "/vsizip/D:/dem/ASTGTM_N37E111.img.zip/ASTGTM_N37E111V.img"
+#   pattern  regex selecting tiles inside `src`. NULL means `src` is already
+#            the file list.
 #   crs      target CRS (proj string, WKT, or an sf crs object)
 #   win      c(xmin, xmax, ymin, ymax) in the target CRS
-#   fact     aggregation factor before reprojection (speed vs detail)
-load_dem <- function(dir, pattern, crs, win, fact = 3, max_na = 0.001) {
+#   fact     aggregation factor applied before reprojection (speed vs detail)
+#   res      output cell size in target CRS units. NULL derives it from the
+#            first tile.
+load_dem <- function(src, pattern = NULL, crs, win, fact = 3, res = NULL,
+                     max_na = 0.001) {
   if (inherits(crs, "crs")) crs <- crs$wkt         # terra::project rejects sf crs
-  files <- list.files(dir, pattern = pattern, full.names = TRUE)
+  files <- if (is.null(pattern)) src
+           else list.files(src, pattern = pattern, full.names = TRUE)
   stopifnot(length(files) > 0)
-  d <- if (length(files) == 1) rast(files) else do.call(terra::merge, lapply(files, rast))
-  if (fact > 1) d <- aggregate(d, fact = fact, fun = "mean", na.rm = TRUE)
-  d <- project(d, crs, method = "bilinear")
-  d <- crop(d, ext(win[["xmin"]], win[["xmax"]], win[["ymin"]], win[["ymax"]]))
+
+  rs <- lapply(files, rast)
+  if (fact > 1) rs <- lapply(rs, aggregate, fact = fact, fun = "mean", na.rm = TRUE)
+  if (is.null(res)) res <- terra::res(project(rs[[1]], crs, method = "near"))[1]
+
+  tmpl <- rast(ext(win[["xmin"]], win[["xmax"]], win[["ymin"]], win[["ymax"]]),
+               crs = crs, resolution = res)
+  rs <- lapply(rs, function(r) project(r, tmpl, method = "bilinear"))
+  d <- if (length(rs) == 1) rs[[1]] else do.call(terra::merge, rs)
   names(d) <- "elev"
+
   na <- global(is.na(d), "mean", na.rm = FALSE)[[1]]
-  cat(sprintf("[DEM] %s  no-data %.3f%%\n", paste(dim(d), collapse = "x"), 100 * na))
+  cat(sprintf("[DEM] %d tile(s), %s cells, %.0f m, no-data %.3f%%
+",
+              length(files), paste(dim(d)[1:2], collapse = "x"), res, 100 * na))
   stopifnot(na <= max_na)
   d
+}
+
+# Build GDAL virtual paths into zipped tiles, so DEM archives need no unpacking.
+# ASTER and SRTM downloads arrive zipped, and the member filename usually
+# carries an arbitrary suffix, so it has to be read from the archive rather
+# than constructed.
+#
+#   dir      directory holding the .zip archives
+#   pattern  regex selecting archives
+#   inner    regex selecting the raster inside each archive
+vsizip_tiles <- function(dir, pattern = "[.]zip$", inner = "[.](img|tif|hgt)$") {
+  zips <- list.files(dir, pattern = pattern, full.names = TRUE)
+  stopifnot(length(zips) > 0)
+  out <- vapply(zips, function(z) {
+    m <- utils::unzip(z, list = TRUE)$Name
+    m <- m[grepl(inner, m, ignore.case = TRUE)]
+    if (!length(m)) NA_character_ else file.path("/vsizip", z, m[1])
+  }, character(1), USE.NAMES = FALSE)
+  bad <- zips[is.na(out)]
+  if (length(bad)) warning("no raster member in: ", paste(basename(bad), collapse = ", "))
+  out[!is.na(out)]
 }
 
 # Where are the no-data cells? Call this when load_dem's assertion fires — the

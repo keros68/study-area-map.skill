@@ -2,6 +2,10 @@
 
 用 R 绘制论文研究区区位图的 Claude Code 技能。基于 ggplot2、sf、terra。
 
+![太原市区位图示例](example/taiyuan_locator.png)
+
+上图由 `example/taiyuan_locator.R` 生成，190 × 99 mm，300 dpi。左侧省级定位用 GEBCO 0.05° 底图并压低对比度，右侧主图用 ASTER GDEM 30 m，两级由虚线锥连接。高程分级由各自 DEM 的分位自动推出（主图 750/1000/1250/1500/1750 m，定位面板 250 至 1250 m）。
+
 ## 功能
 
 - 多级定位面板（国家、省、研究区），各级图框等宽
@@ -52,6 +56,8 @@ ggplot() +
 
 `load_dem()` 会打印栅格尺寸和缺值比例，缺值超过阈值即停止。窗口越出 DEM 瓦片覆盖时，图框边缘会出现无数据白缝，预览时常被比例尺盖住，所以做成断言。
 
+`example/taiyuan_locator.R` 是完整的两级面板例子，可以照着改。它需要三样本地数据：覆盖 N37–N38 / E111–E113 的 ASTER 压缩瓦片、含市县两级的行政区划 shp、以及 `ggmapcn::check_geodata()` 自动下载的 GEBCO。脚本开头三个路径改成你自己的即可。
+
 多面板拼版的顺序与单幅相反：先用 `pin_panel()` 把各面板尺寸定死，再用 `gridExtra::arrangeGrob()` 按毫米拼，最后由 `box_in()` 算出引线端点。`coord_sf()` 长宽比固定，先摆面板再塞地图会在槽内留信箱边，各面板图框因此不等宽。完整流程见 `SKILL.md`。
 
 ## 需要自己准备的数据
@@ -72,7 +78,7 @@ GEBCO 为 0.05°，约 5 km，用于国家级面板合适，用于省级面板�
 
 | 文件 | 内容 |
 |---|---|
-| `reference/relief_basemap.R` | `ensure_font()` `theme_map_pub()` `inscribed_window()` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend()` `legend_backing()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` |
+| `reference/relief_basemap.R` | `ensure_font()` `theme_map_pub()` `inscribed_window()` `vsizip_tiles()` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend()` `legend_backing()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` |
 | `reference/palettes.R` | `pal_hypso()` `elev_breaks()` `elev_labels()` `assert_accent_unique()` `PAL_SURROUND` `BRK_SURROUND` |
 
 两处做法与常见写法不同。
