@@ -40,8 +40,11 @@ pal_hypso <- function(name = "terrain", n = 6) {
 
 # Neutral ramp for land outside the region of interest, plus a sea ramp.
 # Used for the "mask to emphasise" treatment in a country panel.
-PAL_SURROUND <- c("#BCD5E6", "#CBDFEC", "#D9E8F2", "#E5F0F7",   # sea, deep -> shallow
-                  "#EBE8E2", "#E0DCD4", "#D2CDC3")              # land, low -> high
+# Pale enough to recede, saturated enough to still read as sea and land at
+# locator size. The first draft ran two steps lighter and the surround went to
+# plain white in a 45 mm panel, which reads as missing data rather than context.
+PAL_SURROUND <- c("#A3C3DB", "#B5CFE3", "#C6DBEB", "#D7E7F3",   # sea, deep -> shallow
+                  "#E2DED5", "#D3CEC3", "#C2BCAF")              # land, low -> high
 BRK_SURROUND <- c(-1e5, -4000, -1000, -200, 0, 800, 2500, 1e5)
 
 # ---- breaks from the data ----

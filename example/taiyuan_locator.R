@@ -136,15 +136,10 @@ segs <- rbind(
   data.frame(x1 = bx[["x1"]], y1 = bx[["yb"]], x2 = main_rect[["x0"]], y2 = main_rect[["yb"]]))
 fig <- add_leaders(base, segs, FIG_H)
 
-# 图下加一行数据来源：图件常被单独取用，图注不会跟着走
-CREDIT <- paste("Administrative boundaries from the standard map GS(2024)0650.",
-                "Elevation: ASTER GDEM v3 (Taiyuan panel), GEBCO 2024 (Shanxi panel).")
-cf <- credit_footer(fig, CREDIT, FIG_H)
-
 for (v in list(list("taiyuan_locator.png", 300),
                list("taiyuan_locator_preview.png", 150))) {
-  ggsave(v[[1]], cf$grob, width = FIG_W, height = cf$height_mm, units = "mm",
+  ggsave(v[[1]], fig, width = FIG_W, height = FIG_H, units = "mm",
          dpi = v[[2]], bg = "white", device = ragg::agg_png)
   cat(sprintf("WROTE %-34s %g x %.1f mm @ %d dpi  %.2f MB\n",
-              v[[1]], FIG_W, cf$height_mm, v[[2]], file.info(v[[1]])$size / 1e6))
+              v[[1]], FIG_W, FIG_H, v[[2]], file.info(v[[1]])$size / 1e6))
 }

@@ -293,6 +293,14 @@ inset_aspect <- function(win, x, y) {
 # Before using this, check the leader rule: a leader pair fans across the whole
 # side of the panel that faces the next panel, so an inset cannot share that side.
 corner_inset <- function(p, win, x = c(0.795, 0.988), y = c(0.015, 0.400)) {
+  # Strip the inset's own margins, page background and legend before embedding.
+  # annotation_custom draws the WHOLE grob, so a plot.margin and an opaque
+  # plot.background become a white slab that covers the parent map and pushes
+  # the panel inward, where coord_sf then letterboxes it a second time. With
+  # these zeroed the grob is the panel, and the box aspect is the panel aspect.
+  p <- p + theme(plot.margin = margin(0, 0, 0, 0),
+                 plot.background = element_blank(),
+                 legend.position = "none")
   f <- frac_fun(win)
   annotation_custom(ggplotGrob(p), xmin = f$fx(x[1]), xmax = f$fx(x[2]),
                     ymin = f$fy(y[1]), ymax = f$fy(y[2]))

@@ -69,25 +69,28 @@ mg <- with_font_device(panel_margins(p_probe))
 col_w   <- 0.240 * FIG_W
 panel_w <- FIG_W - PAD_L - col_w - GAP_H - mg$side
 panel_h <- panel_w / win_aspect(W_M)
-h_cn <- (panel_h - GAP_V) / 2
-h_sx <- panel_h - GAP_V - h_cn
-cat(sprintf("[版面] 左列 %.1f mm；主图 panel %.1f x %.1f mm；定位框 %.1f / %.1f mm\n",
-            col_w, panel_w, panel_h, h_cn, h_sx))
+# 两个定位框的高度按各自窗口的长宽比分配，不硬性对半：对半会逼出上下留白，
+# 而山西南北长，本来就需要更多高度。上下限防止任一框被压扁。
+avail <- panel_h - GAP_V
 
 # 国家窗口必须取「所有要进框的图层」的合并范围。中国_省line.shp 只有 8 条境界线段
 # （含南海断续线），最北仅到 38.68 度，单取它的 bbox 会把东北、内蒙、新疆、台湾整片
 # 裁掉，而且图面看不出异常。合并后南海断续线也在框内，不必另开角框。
 # 角框版的主框只放陆域，取值时排除三沙市（460300）
-bb <- if (SCS_INSET)
+bb0 <- if (SCS_INSET)
   bbox_union(st_transform(st_make_valid(
     shi[substr(as.character(shi$gb), 4, 9) != "460300", ]), CRS_C)) else
   bbox_union(prov_c, bnd_c)
-dx <- bb[["xmax"]] - bb[["xmin"]]; dy <- bb[["ymax"]] - bb[["ymin"]]
-W_CN <- fit_aspect(c(xmin = bb[["xmin"]] - 0.02 * dx, xmax = bb[["xmax"]] + 0.02 * dx,
-                     ymin = bb[["ymin"]] - 0.02 * dy, ymax = bb[["ymax"]] + 0.02 * dy),
-                   col_w / h_cn)
+dx <- bb0[["xmax"]] - bb0[["xmin"]]; dy <- bb0[["ymax"]] - bb0[["ymin"]]
+bb <- c(xmin = bb0[["xmin"]] - 0.02 * dx, xmax = bb0[["xmax"]] + 0.02 * dx,
+        ymin = bb0[["ymin"]] - 0.02 * dy, ymax = bb0[["ymax"]] + 0.02 * dy)
+h_cn <- min(max(col_w / win_aspect(bb), 0.34 * avail), 0.55 * avail)
+h_sx <- avail - h_cn
+W_CN <- fit_aspect(bb, col_w / h_cn)
 W_SX <- fit_aspect(st_bbox(st_transform(st_union(st_make_valid(sx_shi)), CRS_C)),
                    col_w / h_sx)
+cat(sprintf("[layout] col %.1f mm; main %.1f x %.1f mm; locators %.1f / %.1f mm\n",
+            col_w, panel_w, panel_h, h_cn, h_sx))
 
 # ---------------- 地形 ----------------
 tiles <- vsizip_tiles(DEM_DIR, "^ASTGTM_N3[78]E11[123][.]img[.]zip$")
@@ -129,11 +132,19 @@ theme_loc <- function() theme_map_pub() +
   theme(axis.text = element_blank(), axis.ticks = element_blank())
 
 sx_box <- st_as_sfc(st_bbox(sx_c))
-cn_layers <- function(w, dw, dc) list(
+# 角框版把南海一带的境界线整体交给角框，主框不再画半截断续线。bnd_c 里还有西部
+# 边境的线段，所以按位置分而不是按序号取。
+sansha    <- st_transform(st_make_valid(
+               shi[substr(as.character(shi$gb), 4, 9) == "460300", ]), CRS_C)
+scs_zone  <- st_buffer(st_as_sfc(st_bbox(sansha)), 3e5)
+in_scs    <- lengths(st_intersects(bnd_c, scs_zone)) > 0
+bnd_cn    <- if (SCS_INSET) bnd_c[!in_scs, ] else bnd_c
+
+cn_layers <- function(w, dw, dc, bl = bnd_cn) list(
   geom_spatraster_rgb(data = dw, maxcell = 3e6),
   geom_spatraster_rgb(data = dc, maxcell = 3e6),
   geom_sf(data = prov_c, fill = NA, colour = alpha("white", 0.55), linewidth = LW * 0.3),
-  geom_sf(data = bnd_c, colour = "grey20", linewidth = LW * 0.5),
+  geom_sf(data = bl, colour = "grey20", linewidth = LW * 0.5),
   coord_sf(xlim = w[c("xmin","xmax")], ylim = w[c("ymin","ymax")], expand = FALSE))
 
 p_cn <- ggplot() + cn_layers(W_CN, rel_world, rel_cn) +
@@ -143,16 +154,13 @@ p_cn <- ggplot() + cn_layers(W_CN, rel_world, rel_cn) +
 if (SCS_INSET) {
   # 角框窗口先按角框的物理长宽比撑到位，否则 coord_sf 在框内留信箱边，右下两边对不齐
   IX <- c(0.755, 0.988); IY <- c(0.018, 0.450)
-  # 只取南海一带的境界线：bnd_c 里还有西部边境的线段，全取会把窗口拉到新疆
-  sansha <- st_transform(st_make_valid(
-    shi[substr(as.character(shi$gb), 4, 9) == "460300", ]), CRS_C)
-  scs_zone  <- st_buffer(st_as_sfc(st_bbox(sansha)), 3e5)
-  scs_lines <- bnd_c[lengths(st_intersects(bnd_c, scs_zone)) > 0, ]
+  scs_lines <- bnd_c[in_scs, ]
   W_SCS <- fit_aspect(bbox_union(sansha, scs_lines), inset_aspect(W_CN, IX, IY))
   dem_scs <- load_dem(geb, crs = CRS_C, win = W_SCS, fact = 1, res = 4500)
   p_scs <- ggplot() +
     cn_layers(W_SCS, relief_rgb(dem_scs, BRK_SURROUND, PAL_SURROUND, strength = 0.18),
-              relief_rgb(terra::mask(dem_scs, cn_mask), BRK_CN, COL_CN, strength = 0.35)) +
+              relief_rgb(terra::mask(dem_scs, cn_mask), BRK_CN, COL_CN, strength = 0.35),
+              bl = scs_lines) +
     theme_loc() +
     theme(panel.border = element_rect(colour = "grey30", fill = NA, linewidth = LW * 0.8))
   p_cn <- p_cn + corner_inset(p_scs, W_CN, IX, IY)
@@ -222,16 +230,11 @@ if (!SCS_INSET) segs <- rbind(
   segs)
 fig <- add_leaders(base, segs, FIG_H)
 
-# 图下加一行数据来源：图件常被单独取用，图注不会跟着走
-CREDIT <- paste("Administrative boundaries from the standard map GS(2024)0650.",
-                "Elevation: ASTER GDEM v3 (Taiyuan panel), GEBCO 2024 (China and Shanxi panels).")
-cf <- credit_footer(fig, CREDIT, FIG_H)
-
 STEM <- if (SCS_INSET) "taiyuan_three_level_inset" else "taiyuan_three_level"
 for (v in list(list(paste0(STEM, ".png"), 300),
                list(paste0(STEM, "_preview.png"), 150))) {
-  ggsave(v[[1]], cf$grob, width = FIG_W, height = cf$height_mm, units = "mm",
+  ggsave(v[[1]], fig, width = FIG_W, height = FIG_H, units = "mm",
          dpi = v[[2]], bg = "white", device = ragg::agg_png)
   cat(sprintf("WROTE %-34s %g x %.1f mm @ %d dpi  %.2f MB\n",
-              v[[1]], FIG_W, cf$height_mm, v[[2]], file.info(v[[1]])$size / 1e6))
+              v[[1]], FIG_W, FIG_H, v[[2]], file.info(v[[1]])$size / 1e6))
 }
