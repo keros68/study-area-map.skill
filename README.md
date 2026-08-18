@@ -6,13 +6,26 @@
 
 中国 → 山西 → 太原三级，190 × 99 mm。国家面板把周边国家掩膜成中性灰蓝，中国境内才上分层设色，国界不靠粗线也读得出来；南海诸岛落在主框内，不另开角框。省级面板省界外罩白纱，山西是全饱和的那一块。主图用 ASTER GDEM 30 m，高程分级由 DEM 自身分位推出。两段虚线锥串起三级，端点全部解析求得。
 
+## 做到哪一步
+
+给的是区位图的骨架，不是成品。投影、窗口、面板对齐、地形合成、图廓件这些机械而容易出错的部分由代码固定下来；配色、留白、标注位置、要素取舍没有通用答案，取决于研究区形状、期刊版式和作者偏好，需要出图后自己打磨。
+
+预期用法是先跑出一版能看的，再逐轮调整。可调项都是脚本里显式的单个数值：窗口边距、面板高度分配、色带与级数、图例位置、引线端点。改一个数跑一遍即可，不必改逻辑。配合 agent 一轮轮改，比一次写对更快，也更容易试出适合自己那张图的做法。
+
+代码会当场拦下几类常见错误，而不是画出一张看着正常的错图：
+
+- DEM 未覆盖窗口，图框边缘会留无数据白缝
+- 图廓件压到图框，两条线在 8 pt 下并成一条粗断线
+- 强调色与其他符号撞色，同一个红在印刷上分不出两种含义
+- 色带相邻两类距离过小，分级边界读不出来
+
 ## 功能
 
 - 多级定位面板（国家、省、研究区），各级图框等宽
 - 分层设色地形底图，山影按相乘合成，分级边界和饱和度都保留
 - 缩放引线，虚线锥连接相邻两级面板
 - 图内图例、针形指北针、比例尺
-- 投影窗口、DEM 缺值、强调色重复三项自带断言，不合格时报错停止
+- 投影窗口、DEM 缺值、图廓件压框、强调色撞色、色带可分辨性，均自带断言
 
 ## 安装
 
@@ -139,7 +152,7 @@ GEBCO 为 0.05°，约 5 km，用于国家级面板合适，用于省级面板�
 
 | 文件 | 内容 |
 |---|---|
-| `reference/relief_basemap.R` | `ensure_font()` `theme_map_pub()` `inscribed_window()` `bbox_union()` `vsizip_tiles()` `inset_aspect()` `corner_inset()` `credit_footer()` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend()` `legend_backing()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` |
+| `reference/relief_basemap.R` | `ensure_font()` `theme_map_pub()` `inscribed_window()` `bbox_union()` `vsizip_tiles()` `inset_aspect()` `corner_inset()` `credit_footer()` `assert_inside()` `FRAME_PAD` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend()` `legend_backing()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` |
 | `reference/palettes.R` | `pal_hypso()` `elev_breaks()` `elev_labels()` `preview_hypso()` `check_ramp()` `simulate_cvd()` `to_gray()` `assert_accent_unique()` `PAL_SURROUND` `BRK_SURROUND` |
 
 两处做法与常见写法不同。

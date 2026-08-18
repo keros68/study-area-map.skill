@@ -227,6 +227,24 @@ relief_rgb <- function(d, brks, cols, strength = 0.45, wash = 0,
 
 # --------------------------------------------------------------- furniture ---
 
+# In-panel furniture must clear the panel border. A block whose edge lands on
+# the frame reads as a drawing error: at 8 pt the block's own hairline and the
+# frame merge into one thick broken line, and the reader cannot tell which is
+# the map edge. FRAME_PAD is the clearance every built-in block leaves, as a
+# fraction of panel width or height.
+FRAME_PAD <- 0.025
+
+# Assert a fractional block sits inside the panel with clearance. The built-in
+# helpers call it themselves; call it for anything hand-placed.
+assert_inside <- function(x, y, pad = FRAME_PAD, what = "block") {
+  bad <- c(if (min(x) < pad) "left", if (max(x) > 1 - pad) "right",
+           if (min(y) < pad) "bottom", if (max(y) > 1 - pad) "top")
+  if (length(bad)) stop(sprintf(
+    "%s reaches the %s frame (x %.3f-%.3f, y %.3f-%.3f, clearance %.3f required). Move it inward.",
+    what, paste(bad, collapse = " and "), min(x), max(x), min(y), max(y), pad))
+  invisible(TRUE)
+}
+
 # Fraction -> data coordinate helpers for a window.
 frac_fun <- function(win) list(
   fx = function(t) win[["xmin"]] + t * (win[["xmax"]] - win[["xmin"]]),
@@ -234,8 +252,10 @@ frac_fun <- function(win) list(
 
 # Slim needle north arrow. Width is derived from the window aspect so the needle
 # keeps its shape in panels of different proportions.
-north_needle <- function(win, ax = 0.050, ay = 0.945, h = 0.062, slim = 0.22,
+north_needle <- function(win, ax = 0.055, ay = 0.928, h = 0.060, slim = 0.22,
                          col = "black") {
+  # ay is the tip; the N label sits above it, so the block top is ay + 0.045
+  assert_inside(c(ax - 0.03, ax + 0.03), c(ay - h, ay + 0.045), what = "north arrow")
   f <- frac_fun(win)
   w <- h * slim * (win[["ymax"]] - win[["ymin"]]) / (win[["xmax"]] - win[["xmin"]])
   tri <- data.frame(x = f$fx(c(ax, ax + w, ax, ax - w)),
@@ -251,9 +271,10 @@ north_needle <- function(win, ax = 0.050, ay = 0.945, h = 0.062, slim = 0.22,
 # `labs` must have length(cols) - 1 entries — one per interior boundary. Leave
 # alternate entries "" or the labels run together at 8 pt.
 elev_legend <- function(win, cols, labs, title = "Elevation (m)",
-                        x = c(0.638, 0.962), y_bar = c(0.052, 0.078),
-                        y_title = 0.100, y_tick = 0.036) {
+                        x = c(0.630, 0.945), y_bar = c(0.064, 0.090),
+                        y_title = 0.112, y_tick = 0.048) {
   stopifnot(length(labs) == length(cols) - 1)
+  assert_inside(x, c(y_tick - 0.015, y_title + 0.015), what = "elevation legend")
   f  <- frac_fun(win)
   nb <- length(cols)
   sw <- seq(x[1], x[2], length.out = nb + 1)
@@ -270,7 +291,9 @@ elev_legend <- function(win, cols, labs, title = "Elevation (m)",
 }
 
 # Translucent white backing for any in-panel block.
-legend_backing <- function(win, x, y, alpha = 0.88) {
+legend_backing <- function(win, x = c(0.596, 0.972), y = c(0.032, 0.148),
+                           alpha = 0.88) {
+  assert_inside(x, y, what = "legend backing")
   f <- frac_fun(win)
   annotate("rect", xmin = f$fx(x[1]), xmax = f$fx(x[2]),
            ymin = f$fy(y[1]), ymax = f$fy(y[2]),

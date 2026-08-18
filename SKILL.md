@@ -315,6 +315,19 @@ tri <- data.frame(x = fx(c(ax, ax + w, ax, ax - w)),
 
 The same needle then has the same shape in a wide main panel and a tall locator panel.
 
+### Keep furniture clear of the frame
+
+Nothing drawn inside a panel may touch or cross the panel border. A legend box whose edge lands on the frame does not read as a tight fit; at 8 pt its own hairline and the frame merge into one thick, broken line, and the reader can no longer tell where the map ends. The same goes for north arrows, scale bars and panel labels.
+
+Leave a clearance of about 2.5% of panel width and height — `FRAME_PAD` in `relief_basemap.R`. The built-in blocks default to that and assert it, so a hand-moved legend fails loudly instead of shipping:
+
+```r
+assert_inside(c(0.598, 0.977), c(0.030, 0.148), what = "legend backing")
+# legend backing reaches the right frame (x 0.598-0.977, ...). Move it inward.
+```
+
+Express furniture positions as fractions of the window, never as absolute coordinates. Fractions survive a change of window or panel size; absolute positions silently drift off the panel the next time the extent is edited.
+
 ### Corner budget
 
 An elongated study area leaves exactly two usable corners, on the long axis's off-diagonal. Inventory them before placing anything: north arrow, scale bar, elevation ramp, symbol legend, panel tag. Group the furniture — arrow plus elevation ramp in one box, symbol legend in the other — instead of scattering four small boxes into four corners.
@@ -387,4 +400,5 @@ Two things still need explicit syncing because they are computed per figure:
 - A white casing under the accent-coloured boundary: at figure scale the casing blends into the line and it reads pink, not red, and no longer matches its own legend swatch
 - Two line styles on the map, one entry in the legend
 - Four separate furniture boxes in four corners of a panel that only has two free ones
+- A legend or arrow whose edge sits on the panel border
 - Letting a 5 km DEM be described as the study-area DEM

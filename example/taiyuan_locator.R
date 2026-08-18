@@ -82,7 +82,7 @@ p_main <- ggplot() +
   geom_spatraster_rgb(data = rel_m, maxcell = 4e6) +
   geom_sf(data = ty_x, fill = NA, colour = alpha("white", 0.65), linewidth = LW * 0.5) +
   geom_sf(data = ty, fill = NA, colour = ACC, linewidth = LW_DAT * 1.3) +
-  legend_backing(W_M, c(0.615, 0.990), c(0.020, 0.135)) +
+  legend_backing(W_M) +
   elev_legend(W_M, col_m, elev_labels(brk_m)) +
   north_needle(W_M) +
   annotate("label", x = Inf, y = Inf, hjust = 1.10, vjust = 1.14, label = "Taiyuan",
