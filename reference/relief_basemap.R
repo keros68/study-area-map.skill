@@ -300,6 +300,22 @@ with_font_device <- function(expr, width_mm = 190, height_mm = 220) {
   force(expr)
 }
 
+# Data-source footer: one small line under the composed figure.
+#
+# The caption is where a journal expects sources, but figures get lifted out of
+# manuscripts into slides and reviews, and the caption does not travel with
+# them. A footer line keeps the attribution attached to the image.
+#
+# Returns the wrapped grob and the new total height, since the footer adds to it.
+credit_footer <- function(g, text, fig_h_mm, h_mm = 4.2, pt = 6,
+                          col = "grey30", pad_l = 2) {
+  lab <- grid::textGrob(text, x = grid::unit(pad_l, "mm"), hjust = 0,
+                        gp = grid::gpar(fontfamily = "Arial", fontsize = pt, col = col))
+  list(grob = gridExtra::arrangeGrob(g, lab, ncol = 1,
+                                     heights = grid::unit(c(fig_h_mm, h_mm), "mm")),
+       height_mm = fig_h_mm + h_mm)
+}
+
 # A geographic box's position inside a panel, in mm from the figure's top-left.
 # rect is c(x0, x1, yt, yb) in the same frame. Used for zoom leader endpoints.
 box_in <- function(bb, wn, rect) {
