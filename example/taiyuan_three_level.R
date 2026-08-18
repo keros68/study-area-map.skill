@@ -129,7 +129,8 @@ lab <- function(txt) annotate("label", x = -Inf, y = Inf, hjust = -0.10, vjust =
                               fill = alpha("white", 0.85), label.r = unit(0, "mm"),
                               label.padding = unit(0.7, "mm"))
 theme_loc <- function() theme_map_pub() +
-  theme(axis.text = element_blank(), axis.ticks = element_blank())
+  theme(axis.text = element_blank(), axis.ticks = element_blank(),
+        plot.margin = margin(0, 0, 0, 0))
 
 sx_box <- st_as_sfc(st_bbox(sx_c))
 # 角框版把南海一带的境界线整体交给角框，主框不再画半截断续线。bnd_c 里还有西部
@@ -140,16 +141,20 @@ scs_zone  <- st_buffer(st_as_sfc(st_bbox(sansha)), 3e5)
 in_scs    <- lengths(st_intersects(bnd_c, scs_zone)) > 0
 bnd_cn    <- if (SCS_INSET) bnd_c[!in_scs, ] else bnd_c
 
-cn_layers <- function(w, dw, dc, bl = bnd_cn) list(
+# coord_sf 不放进图层列表：geom_sf 自带一个默认 coord_sf，排在其后就会把已设的
+# 窗口替换掉，面板悄悄退回数据全域。coord_sf 一律最后加。
+cn_layers <- function(dw, dc, bl = bnd_cn) list(
   geom_spatraster_rgb(data = dw, maxcell = 3e6),
   geom_spatraster_rgb(data = dc, maxcell = 3e6),
   geom_sf(data = prov_c, fill = NA, colour = alpha("white", 0.55), linewidth = LW * 0.3),
-  geom_sf(data = bl, colour = "grey20", linewidth = LW * 0.5),
-  coord_sf(xlim = w[c("xmin","xmax")], ylim = w[c("ymin","ymax")], expand = FALSE))
+  geom_sf(data = bl, colour = "grey20", linewidth = LW * 0.5))
 
-p_cn <- ggplot() + cn_layers(W_CN, rel_world, rel_cn) +
+win_coord <- function(w) coord_sf(xlim = w[c("xmin","xmax")], ylim = w[c("ymin","ymax")],
+                                  expand = FALSE)
+
+p_cn <- ggplot() + cn_layers(rel_world, rel_cn) +
   geom_sf(data = sx_c, fill = alpha(ACC, 0.65), colour = ACC, linewidth = LW * 0.5) +
-  lab("China") + theme_loc()
+  lab("China") + win_coord(W_CN) + theme_loc()
 
 if (SCS_INSET) {
   # 角框窗口先按角框的物理长宽比撑到位，否则 coord_sf 在框内留信箱边，右下两边对不齐
@@ -158,13 +163,15 @@ if (SCS_INSET) {
   W_SCS <- fit_aspect(bbox_union(sansha, scs_lines), inset_aspect(W_CN, IX, IY))
   dem_scs <- load_dem(geb, crs = CRS_C, win = W_SCS, fact = 1, res = 4500)
   p_scs <- ggplot() +
-    cn_layers(W_SCS, relief_rgb(dem_scs, BRK_SURROUND, PAL_SURROUND, strength = 0.18),
+    cn_layers(relief_rgb(dem_scs, BRK_SURROUND, PAL_SURROUND, strength = 0.18),
               relief_rgb(terra::mask(dem_scs, cn_mask), BRK_CN, COL_CN, strength = 0.35),
               bl = scs_lines) +
-    theme_loc() +
+    win_coord(W_SCS) + theme_loc() +
     theme(panel.border = element_rect(colour = "grey30", fill = NA, linewidth = LW * 0.8))
+  assert_window(p_scs, W_SCS)
   p_cn <- p_cn + corner_inset(p_scs, W_CN, IX, IY)
 }
+assert_window(p_cn, W_CN)
 
 ty_c   <- st_transform(ty_m, CRS_C)
 ty_box <- st_as_sfc(st_bbox(ty_c))
@@ -176,9 +183,7 @@ p_sx <- ggplot() +
   geom_sf(data = st_union(sx_c), fill = NA, colour = "grey15", linewidth = LW * 1.1) +
   geom_sf(data = ty_c, fill = alpha(ACC, 0.6), colour = ACC, linewidth = LW * 0.6) +
   geom_sf(data = ty_box, fill = NA, colour = ACC, linewidth = LW * 1.2) +
-  lab("Shanxi") +
-  coord_sf(xlim = W_SX[c("xmin","xmax")], ylim = W_SX[c("ymin","ymax")], expand = FALSE) +
-  theme_loc()
+  lab("Shanxi") + win_coord(W_SX) + theme_loc()
 
 p_main <- ggplot() +
   geom_spatraster_rgb(data = rel_m, maxcell = 4e6) +
@@ -197,6 +202,9 @@ p_main <- ggplot() +
                    line_width = LW / 0.353, pad_x = unit(2.5, "mm"),
                    pad_y = unit(2.5, "mm")) +
   theme_map_pub()
+
+assert_window(p_sx, W_SX)
+assert_window(p_main, W_M)
 
 # ---------------- 合成 ----------------
 grobs <- with_font_device(list(

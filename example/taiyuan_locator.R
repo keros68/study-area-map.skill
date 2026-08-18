@@ -109,7 +109,11 @@ p_loc <- ggplot() +
            label.r = unit(0, "mm"), label.padding = unit(0.7, "mm")) +
   coord_sf(xlim = W_SX[c("xmin","xmax")], ylim = W_SX[c("ymin","ymax")], expand = FALSE) +
   theme_map_pub() +
-  theme(axis.text = element_blank(), axis.ticks = element_blank())
+  theme(axis.text = element_blank(), axis.ticks = element_blank(),
+        plot.margin = margin(0, 0, 0, 0))
+
+assert_window(p_main, W_M)
+assert_window(p_loc, W_SX)
 
 # ---------------- 合成 ----------------
 grobs <- with_font_device({

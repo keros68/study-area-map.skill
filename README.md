@@ -14,6 +14,7 @@
 
 代码会当场拦下几类常见错误，而不是画出一张看着正常的错图：
 
+- `coord_sf` 设的窗口被后来的 `geom_sf` 顶掉，面板悄悄退回数据全域
 - DEM 未覆盖窗口，图框边缘会留无数据白缝
 - 图廓件压到图框，两条线在 8 pt 下并成一条粗断线
 - 强调色与其他符号撞色，同一个红在印刷上分不出两种含义
@@ -152,7 +153,7 @@ GEBCO 为 0.05°，约 5 km，用于国家级面板合适，用于省级面板�
 
 | 文件 | 内容 |
 |---|---|
-| `reference/relief_basemap.R` | `ensure_font()` `theme_map_pub()` `inscribed_window()` `bbox_union()` `vsizip_tiles()` `inset_aspect()` `corner_inset()` `credit_footer()` `assert_inside()` `FRAME_PAD` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend()` `legend_backing()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` |
+| `reference/relief_basemap.R` | `ensure_font()` `theme_map_pub()` `inscribed_window()` `bbox_union()` `vsizip_tiles()` `inset_aspect()` `corner_inset()` `credit_footer()` `assert_inside()` `assert_window()` `FRAME_PAD` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend()` `legend_backing()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` |
 | `reference/palettes.R` | `pal_hypso()` `elev_breaks()` `elev_labels()` `preview_hypso()` `check_ramp()` `simulate_cvd()` `to_gray()` `assert_accent_unique()` `PAL_SURROUND` `BRK_SURROUND` |
 
 两处做法与常见写法不同。

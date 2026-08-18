@@ -300,6 +300,33 @@ legend_backing <- function(win, x = c(0.596, 0.972), y = c(0.032, 0.148),
            fill = "white", alpha = alpha, colour = "grey35", linewidth = LW * 0.6)
 }
 
+# Prove the panel really uses the window you asked for.
+#
+# geom_sf() quietly carries a default coord_sf(), and adding any coord replaces
+# the existing one. So a single geom_sf() placed AFTER your
+# coord_sf(xlim =, ylim =) throws the limits away and the panel silently falls
+# back to the data extent. ggplot only emits "Adding new coordinate system",
+# which is easy to lose in a long log, and the figure still looks like a map.
+#
+# Rule: coord_sf() goes last. Never put it inside a layer list that later gets
+# extended. Then call this to check.
+assert_window <- function(p, win, tol = 1e-3) {
+  bp  <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]
+  got <- c(xmin = bp$x_range[1], xmax = bp$x_range[2],
+           ymin = bp$y_range[1], ymax = bp$y_range[2])
+  span <- max(win[["xmax"]] - win[["xmin"]], win[["ymax"]] - win[["ymin"]])
+  d <- max(abs(got[c("xmin", "xmax", "ymin", "ymax")] -
+               win[c("xmin", "xmax", "ymin", "ymax")])) / span
+  if (d > tol) stop(sprintf(
+    "panel range is not the requested window (relative error %.3f).
+  asked  x %.0f..%.0f  y %.0f..%.0f
+  drawn  x %.0f..%.0f  y %.0f..%.0f
+  A geom_sf() after coord_sf() replaces the coord and drops the limits; move coord_sf() last.",
+    d, win[["xmin"]], win[["xmax"]], win[["ymin"]], win[["ymax"]],
+    got[["xmin"]], got[["xmax"]], got[["ymin"]], got[["ymax"]]))
+  invisible(TRUE)
+}
+
 # ---- corner inset ----
 # Physical aspect ratio of a fractional box inside a panel. The panel is in
 # projected units with equal x/y scaling, so the fraction ratio times the window

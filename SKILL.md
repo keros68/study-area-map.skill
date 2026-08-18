@@ -75,6 +75,26 @@ clip <- sf::st_as_sfc(sf::st_bbox(W, crs = sf::st_crs(prov)))
 stopifnot(all(lengths(sf::st_within(sf::st_geometry(prov), clip)) > 0))
 ```
 
+### coord_sf() goes last, and prove it
+
+`geom_sf()` does not return a layer. It returns a list containing the layer **and a default `coord_sf()`**, and adding any coord replaces the one already on the plot. So a single `geom_sf()` placed after your `coord_sf(xlim =, ylim =)` throws the limits away and the panel silently falls back to the data extent.
+
+```r
+rng <- function(p) { bp <- ggplot_build(p)$layout$panel_params[[1]]
+                     c(bp$x_range, bp$y_range) }
+p <- ggplot() + geom_sf(data = pt) + coord_sf(xlim = c(2, 4), ylim = c(2, 4), expand = FALSE)
+rng(p)                      # 2 4 2 4
+rng(p + geom_sf(data = pt)) # -0.5 10.5 -0.5 10.5
+```
+
+ggplot's only warning is an easily-missed `Adding new coordinate system, which will replace the existing one`, and the figure still looks like a map — just of the wrong extent, at the wrong aspect, letterboxed inside its slot with a band of white where the reader expects data.
+
+Two consequences. Never put `coord_sf()` inside a layer list that a caller might extend — a `map_layers()` helper must return layers only. And check the built plot rather than trusting the code:
+
+```r
+assert_window(p, W)   # compares ggplot_build()'s panel range against the window
+```
+
 ### Fix the slot first, then expand the window
 
 `coord_sf()` enforces a fixed aspect ratio. Drop a map into a layout slot whose shape differs and it letterboxes *inside* that slot: the drawn panel is narrower than its cell, and two side-by-side locator panels end up visibly unequal. Hand-tuned offsets never converge.
@@ -396,6 +416,7 @@ Two things still need explicit syncing because they are computed per figure:
 - `st_bbox()` of a transformed lon/lat rectangle for a country panel — silently amputates the south
 - Taking the window from one layer's bbox when several layers must fit — partial line layers cut whole regions off, and the result still looks like a map
 - Sizing an inset from a corner-bbox aspect ratio instead of the rendered panel ratio
+- A `geom_sf()` added after `coord_sf(xlim =, ylim =)` — the limits are silently discarded and the panel reverts to the data extent
 - Calling `ggplotGrob()` with no font-aware device open
 - A white casing under the accent-coloured boundary: at figure scale the casing blends into the line and it reads pink, not red, and no longer matches its own legend swatch
 - Two line styles on the map, one entry in the legend
