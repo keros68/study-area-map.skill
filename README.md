@@ -64,12 +64,16 @@ ggplot() +
 
 | 脚本 | 层级 | 演示重点 |
 |---|---|---|
-| `taiyuan_three_level.R` | 中国 → 山西 → 太原 | 掩膜、白纱、两段引线、国家窗口取边界线全域以省掉角框 |
+| `taiyuan_three_level.R` | 中国 → 山西 → 太原 | 掩膜、白纱、两段引线；南海走主框或角框由脚本开头一个开关控制 |
 | `taiyuan_locator.R` | 山西 → 太原 | 定位面板整体去饱和的另一种处理 |
 
-三级版：
+三级版，`SCS_INSET <- FALSE`，窗口取全部要素，南海落在国家主框内，三级引线齐全：
 
 ![三级区位图示例](example/taiyuan_three_level_preview.png)
+
+三级版，`SCS_INSET <- TRUE`，主框只放陆域，南海走右下角框。角框与引线锥占同一块地方，所以这一版只保留山西到主图那一段引线，中国到山西改由红色块本身指示：
+
+![三级角框版](example/taiyuan_three_level_inset_preview.png)
 
 两级版：
 
@@ -78,6 +82,46 @@ ggplot() +
 图下一行数据来源由 `credit_footer()` 加上。图注是期刊放来源的地方，但图件常被单独取到幻灯片或评审意见里，图注不会跟着走，写在图上才不会丢。
 
 两者都需要三样本地数据：覆盖 N37–N38 / E111–E113 的 ASTER 压缩瓦片、含市县两级的行政区划 shp、以及 `ggmapcn::check_geodata()` 自动下载的 GEBCO。脚本开头的路径改成你自己的即可。压缩瓦片不必解包，`vsizip_tiles()` 会读归档拼出 GDAL 虚拟路径。
+
+## 配色
+
+六条色带，按低地是什么来选，不按口味。
+
+| 名称 | 低 → 高 | 适用 |
+|---|---|---|
+| `terrain` | 绿 → 黄 → 橙 → 红褐 | 通用 |
+| `arid` | 浅灰绿 → 麦秆 → 棕褐 | 低地是荒漠，绿色会误示植被 |
+| `alpine` | 深绿 → 橄榄 → 灰褐 → 浅岩色 | 高差大，顶档应读作裸岩 |
+| `muted` | terrain 去饱和 | 底图要承载大量叠加符号 |
+| `cvd` | 蓝绿 → 卡其 → 橙 → 褐 | 避开红绿轴 |
+| `gray` | L\* 等距灰阶 | 黑白印刷 |
+
+`cols` 处处都是普通字符向量，所以别的色带照样能用：`relief_rgb(dem, brk, viridisLite::viridis(6))`。
+
+选色带的前提是看得见。`preview_hypso(dem)` 用同一份 DEM 把全部色带各画一遍：
+
+![色带对照](example/hypso_preview.png)
+
+`check_ramp(cols)` 报相邻两类在正常视觉、色盲与灰度下的最小 Lab 距离。相邻类才是读者要比的那一对，隔得远的两类看着像不要紧。6 级实测：
+
+| 色带 | 正常 | 绿色盲 | 红色盲 | 灰度 |
+|---|---|---|---|---|
+| `terrain` | 17.1 | 9.2 | 4.7 | 4.7 |
+| `arid` | 9.7 | 5.7 | 4.0 | 5.4 |
+| `alpine` | 12.6 | 4.9 | 8.0 | 1.5 |
+| `muted` | 9.1 | 5.4 | 4.9 | 2.5 |
+| `cvd` | **18.1** | **19.0** | **14.5** | 8.4 |
+| `gray` | 11.7 | 11.7 | 11.7 | **11.7** |
+
+三条结论直接可用：
+
+彩色分层设色**没有一条经得起黑白印刷**（灰度 1.5 至 8.4）。期刊要黑白就换 `gray`，不要试图把彩色色带调到灰度可读。
+
+`cvd` 是唯一在色盲下仍保持分离的彩色色带。默认的 `terrain` 在红色盲下掉到 4.7，相邻两档基本合成一档。
+
+级数越多越挤。`terrain` 的正常视觉距离从 5 级的 21.4 掉到 10 级的 9.4，红色盲下从 2.5 掉到 0.5。级数取 5 至 8。
+
+阈值 10 是经验值不是标准：低于它，两档的边界在 8 pt 图例上就看不出来了。判定默认只算正常视觉与两种色盲；要黑白印刷时把 `"gray"` 加进 `require`。
 
 ## 需要自己准备的数据
 
@@ -97,8 +141,8 @@ GEBCO 为 0.05°，约 5 km，用于国家级面板合适，用于省级面板�
 
 | 文件 | 内容 |
 |---|---|
-| `reference/relief_basemap.R` | `ensure_font()` `theme_map_pub()` `credit_footer()` `inscribed_window()` `bbox_union()` `vsizip_tiles()` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend()` `legend_backing()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` |
-| `reference/palettes.R` | `pal_hypso()` `elev_breaks()` `elev_labels()` `assert_accent_unique()` `PAL_SURROUND` `BRK_SURROUND` |
+| `reference/relief_basemap.R` | `ensure_font()` `theme_map_pub()` `credit_footer()` `inscribed_window()` `bbox_union()` `vsizip_tiles()` `inset_aspect()` `corner_inset()` `fit_aspect()` `win_aspect()` `load_dem()` `locate_na()` `relief_rgb()` `north_needle()` `elev_legend()` `legend_backing()` `pin_panel()` `panel_margins()` `with_font_device()` `box_in()` `add_leaders()` |
+| `reference/palettes.R` | `pal_hypso()` `elev_breaks()` `elev_labels()` `preview_hypso()` `check_ramp()` `simulate_cvd()` `to_gray()` `assert_accent_unique()` `PAL_SURROUND` `BRK_SURROUND` |
 
 两处做法与常见写法不同。
 

@@ -149,9 +149,13 @@ rel  <- relief_rgb(dem, brk, cols, strength = 0.42)
 elev_legend(win, cols, elev_labels(brk))     # blanks alternate labels
 ```
 
-Four ramps, chosen by what the lowland *is*, not by taste: `terrain` (green lowland, general purpose), `arid` (pale sage to deep brown, for basins where green would falsely imply vegetation), `alpine` (top class reads as bare rock rather than "hottest"), `muted` (desaturated, an alternative to `relief_rgb(wash = )`).
+Six ramps, chosen by what the lowland *is*, not by taste: `terrain` (green lowland, general purpose), `arid` (for basins where green would falsely imply vegetation), `alpine` (top class reads as bare rock rather than "hottest"), `muted` (desaturated, an alternative to `relief_rgb(wash = )`), `cvd` (avoids the red/green axis), `gray` (black-and-white printing, anchors spaced evenly in L*). `cols` is a plain character vector throughout, so any other ramp works.
 
-Class count 5–8. Below 5 the relief structure collapses; above 8 adjacent bands stop being distinguishable at 8 pt legend size.
+**Show the candidates on the actual terrain before choosing.** `preview_hypso(dem)` renders one DEM under every ramp; a ramp that looks right as swatches often collapses on real relief.
+
+**Then measure separability.** `check_ramp(cols)` reports the smallest Lab distance between *adjacent* classes under normal vision, deuteranopia, protanopia and greyscale — adjacent classes are the pair a reader compares. Measured at six classes: `terrain` 17.1 normal but 4.7 under protanopia; `cvd` holds 19.0/14.5; every colour ramp falls to 1.5–8.4 in greyscale. Two rules follow. When the journal prints in black and white, switch to `gray` rather than tuning a colour ramp. When colour-vision safety matters, `cvd` is the only colour ramp here that survives.
+
+Class count 5–8. Below 5 the relief structure collapses; above 8 adjacent bands stop being distinguishable — `terrain` drops from 21.4 at five classes to 9.4 at ten, and to 0.5 under protanopia.
 
 The accent colour rule is enforceable, not just advisory. `assert_accent_unique()` compares in Lab space, because two reds that differ in hex still read as one colour in print:
 
@@ -272,10 +276,11 @@ Draw the segments as one `grid::segmentsGrob()` in mm over the composed gtable (
 
 **The collision rule.** A leader pair fans from the highlight box to two corners of the target panel, so it sweeps across the whole side of the source panel that faces the target. **Nothing else can occupy that side.** In particular a corner inset — the standard bottom-right South China Sea box — sits precisely where the cone passes when the next panel is below.
 
-Only two ways out, and the first is better:
+Three ways out:
 
-1. **Widen the main window so the inset is unnecessary.** Extend the window until the whole boundary layer falls inside the main frame. This removes an element and removes the conflict at the same time.
-2. Drop the leader lines. Legitimate — many journals' figures have none — but then the panels need some other cue tying them together (shared accent colour, matched frames).
+1. **Widen the main window so the inset is unnecessary.** Extend the window until every layer that must appear falls inside the main frame. This removes an element and the conflict at once, and is usually the best answer.
+2. **Keep the inset and drop the leader pair that would cross it.** A locator panel whose highlight is a filled accent-coloured patch already points at the next panel; the leaders are reinforcement, not the only cue. Use `corner_inset()`, and size the inset's window with `fit_aspect(bb, inset_aspect(win, x, y))` first — an inset whose window aspect does not match its box gets letterboxed by `coord_sf` and its edges stop aligning.
+3. Drop the leader lines entirely. Legitimate — many journals' figures have none — but then the panels need some other cue tying them together (shared accent colour, matched frames).
 
 Also clear the target side: put the main panel's latitude labels on the **right** (`scale_y_continuous(position = "right")`) when leaders arrive from the left, or they cross the tick labels.
 

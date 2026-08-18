@@ -277,6 +277,27 @@ legend_backing <- function(win, x, y, alpha = 0.88) {
            fill = "white", alpha = alpha, colour = "grey35", linewidth = LW * 0.6)
 }
 
+# ---- corner inset ----
+# Physical aspect ratio of a fractional box inside a panel. The panel is in
+# projected units with equal x/y scaling, so the fraction ratio times the window
+# ratio IS the printed ratio.
+inset_aspect <- function(win, x, y) {
+  ((x[2] - x[1]) * (win[["xmax"]] - win[["xmin"]])) /
+  ((y[2] - y[1]) * (win[["ymax"]] - win[["ymin"]]))
+}
+
+# Place a plot into a fractional box of the parent panel, in the parent's data
+# coordinates. Size the inset's own window with fit_aspect(win, inset_aspect(...))
+# first, or coord_sf letterboxes inside the box and its edges stop aligning.
+#
+# Before using this, check the leader rule: a leader pair fans across the whole
+# side of the panel that faces the next panel, so an inset cannot share that side.
+corner_inset <- function(p, win, x = c(0.795, 0.988), y = c(0.015, 0.400)) {
+  f <- frac_fun(win)
+  annotation_custom(ggplotGrob(p), xmin = f$fx(x[1]), xmax = f$fx(x[2]),
+                    ymin = f$fy(y[1]), ymax = f$fy(y[2]))
+}
+
 # ------------------------------------------------------------- composition ---
 
 # Pin a ggplot's panel cell to an exact size. respect = FALSE stops coord_fixed
