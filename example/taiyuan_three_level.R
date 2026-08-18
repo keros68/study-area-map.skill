@@ -19,11 +19,11 @@
 #   TRUE   主框只放陆域，南海走右下角框。角框与引线锥占同一块地方，因此这一版
 #          只保留山西到主图那一段引线，中国到山西改由红色块本身承担指示。
 SCS_INSET <- FALSE
-IX <- c(0.760, 0.985); IY <- c(0.020, 0.300)   # 角框在主框内的位置
-# 南海诸岛作中国地图附图时须命名（《公开地图内容表示规范》第六条第三款）。
-# 名称要放得下，角框就不能太小，这是角框方案的硬约束。
-INSET_LABEL <- "South China Sea
-Islands"
+IX <- c(0.808, 0.985); IY <- c(0.020, 0.300)   # 角框在主框内的位置
+# 《公开地图内容表示规范》第六条第三款：南海诸岛作中国地图附图时一律称「南海诸岛」。
+# 此处不加注记，由使用者按投稿要求自行决定；要加就把名称填进 INSET_LABEL，
+# 并相应放宽 IX，名称放不下角框就不能那么小。
+INSET_LABEL <- NULL
 
 SKILL   <- "../reference"          # 从 example/ 目录运行本脚本
 DEM_DIR <- "F:/博士毕业论文/山西DEM"
@@ -187,10 +187,11 @@ if (SCS_INSET) {
     win_coord(W_SCS) + theme_loc() +
     theme(panel.border = element_rect(colour = "grey30", fill = NA, linewidth = LW * 0.8))
   assert_window(p_scs, W_SCS)
-  p_cn <- p_cn + corner_inset(p_scs, W_CN, IX, IY) +
-    annotate("text", x = fr_cn$fx(IX[2]), y = fr_cn$fy(IY[2] + 0.075), hjust = 1,
-             label = INSET_LABEL, size = TXT_GG * 0.86, family = "Arial",
-             colour = "black", lineheight = 0.95)
+  p_cn <- p_cn + corner_inset(p_scs, W_CN, IX, IY)
+  if (!is.null(INSET_LABEL))
+    p_cn <- p_cn + annotate("text", x = fr_cn$fx(IX[2]), y = fr_cn$fy(IY[2] + 0.075),
+                            hjust = 1, label = INSET_LABEL, size = TXT_GG * 0.86,
+                            family = "Arial", colour = "black", lineheight = 0.95)
 }
 assert_window(p_cn, W_CN)
 
