@@ -1,5 +1,7 @@
 # study-area-map.skill
 
+> **本项目已并入 [xiaoyu-skill](https://github.com/keros68/xiaoyu-skill/tree/main/skills/study-area-map)。本仓库保留为只读历史入口，后续更新请前往新仓库。**
+
 用 R 绘制论文研究区区位图的 Claude Code 技能。基于 ggplot2、sf、terra。
 
 负责快速搭出框架：投影、窗口、面板对齐、地形合成、图廓件。配色、留白、标注位置与要素取舍出图后自行调整。
